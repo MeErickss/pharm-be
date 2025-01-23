@@ -44,17 +44,6 @@ db.connect((err) => {
     console.log("Tabela criada ou já existente.");
   });
 
-  // Preencher a tabela com um dado exemplo
-  const preenchertabela = `INSERT INTO tabela_exemplo (nome) VALUES ("pao")`;
-
-  db.query(preenchertabela, (err, result) => {
-    if (err) {
-      console.error("Erro ao preencher tabela:", err);
-      throw err;
-    }
-    console.log("Tabela preenchida.");
-  });
-
   // Agora que a conexão foi estabelecida, iniciamos o servidor
   app.listen(port, () => {
     console.log(`Servidor rodando na porta ${port}`);
