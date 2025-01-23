@@ -29,9 +29,10 @@ db.connect((err) => {
 
   // Criação da tabela se não existir
   const criarTabela = `
-    CREATE TABLE IF NOT EXISTS tabela_exemplo (
+    CREATE TABLE IF NOT EXISTS users (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      nome VARCHAR(255) NOT NULL
+      login VARCHAR(255) NOT NULL,
+      password VARCHAR(255) NOT NULL
     );
   `;
 
@@ -64,7 +65,7 @@ db.connect((err) => {
 app.get("/api/dados", (req, res) => {
   console.log("Endpoint /api/dados chamado");
 
-  const sql = "SELECT * FROM tabela_exemplo";
+  const sql = "SELECT * FROM users";
   db.query(sql, (err, results) => {
     if (err) {
       console.error("Erro ao pegar dados:", err);
