@@ -66,3 +66,20 @@ app.get("/api/dados", (req, res) => {
     res.json(results);
   });
 });
+
+app.get("/api/insert", (req, res) => {
+  console.log("Endpoint /api/insert chamado");
+
+  const sql = "INSERT INTO TABLE VALUES(); INSERT INTO TABLE VALUES() INSERT INTO TABLE VALUES() INSERT INTO TABLE VALUES() INSERT INTO TABLE VALUES() INSERT INTO TABLE VALUES() ";
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Erro ao pegar dados:", err);
+      res.status(500).send("Erro ao pegar dados");
+      return;
+    }
+
+    console.log("Resultados da consulta:", results);  // Verifique se está recebendo resultados
+    res.json(results);
+  });
+});
+
