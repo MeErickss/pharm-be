@@ -66,3 +66,19 @@ app.get("/api/dados", (req, res) => {
     res.json(results);
   });
 });
+
+app.get("/api/parametros_producao", (req, res) => {
+  console.log("Endpoint /api/dados chamado");
+
+  const sql = "SELECT * FROM parameters_producao";
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Erro ao pegar dados:", err);
+      res.status(500).send("Erro ao pegar dados");
+      return;
+    }
+
+    console.log("Resultados da consulta:", results);  // Verifique se está recebendo resultados
+    res.json(results);
+  });
+});
