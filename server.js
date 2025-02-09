@@ -51,8 +51,8 @@ db.connect((err) => {
 });
 
 // Endpoint para pegar dados
-app.get("/api/dados", (req, res) => {
-  console.log("Endpoint /api/dados chamado");
+app.get("/api/users", (req, res) => {
+  console.log("Endpoint /api/users chamado");
 
   const sql = "SELECT * FROM users";
   db.query(sql, (err, results) => {
@@ -68,6 +68,38 @@ app.get("/api/dados", (req, res) => {
 });
 
 app.get("/api/parametros_producao", (req, res) => {
+  console.log("Endpoint /api/dados chamado");
+
+  const sql = "SELECT * FROM parameters_producao";
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Erro ao pegar dados:", err);
+      res.status(500).send("Erro ao pegar dados");
+      return;
+    }
+
+    console.log("Resultados da consulta:", results);  // Verifique se está recebendo resultados
+    res.json(results);
+  });
+});
+
+app.get("/api/tipos_parametros", (req, res) => {
+  console.log("Endpoint /api/dados chamado");
+
+  const sql = "SELECT * FROM parameters_producao";
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Erro ao pegar dados:", err);
+      res.status(500).send("Erro ao pegar dados");
+      return;
+    }
+
+    console.log("Resultados da consulta:", results);  // Verifique se está recebendo resultados
+    res.json(results);
+  });
+});
+
+app.get("/api/unidades", (req, res) => {
   console.log("Endpoint /api/dados chamado");
 
   const sql = "SELECT * FROM parameters_producao";
