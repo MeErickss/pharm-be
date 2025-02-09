@@ -68,7 +68,7 @@ app.get("/api/users", (req, res) => {
 });
 
 app.get("/api/parametros_producao", (req, res) => {
-  console.log("Endpoint /api/dados chamado");
+  console.log("Endpoint /api/parametros_producao chamado");
 
   const sql = "SELECT * FROM parameters_producao";
   db.query(sql, (err, results) => {
@@ -84,9 +84,9 @@ app.get("/api/parametros_producao", (req, res) => {
 });
 
 app.get("/api/tipos_parametros", (req, res) => {
-  console.log("Endpoint /api/dados chamado");
+  console.log("Endpoint /api/tipos_parametros chamado");
 
-  const sql = "SELECT * FROM parameters_producao";
+  const sql = "SELECT * FROM tipos_parametros";
   db.query(sql, (err, results) => {
     if (err) {
       console.error("Erro ao pegar dados:", err);
@@ -100,9 +100,9 @@ app.get("/api/tipos_parametros", (req, res) => {
 });
 
 app.get("/api/unidades", (req, res) => {
-  console.log("Endpoint /api/dados chamado");
+  console.log("Endpoint /api/unidades chamado");
 
-  const sql = "SELECT * FROM parameters_producao";
+  const sql = "SELECT * FROM unidades";
   db.query(sql, (err, results) => {
     if (err) {
       console.error("Erro ao pegar dados:", err);
