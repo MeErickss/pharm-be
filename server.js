@@ -67,10 +67,10 @@ app.get("/api/users", (req, res) => {
   });
 });
 
-app.get("/api/parametros_producao", (req, res) => {
-  console.log("Endpoint /api/parametros_producao chamado");
+app.get("/api/parametros", (req, res) => {
+  console.log("Endpoint /api/parametros chamado");
 
-  const sql = "SELECT * FROM parameters_producao";
+  const sql = "SELECT * FROM parametros";
   db.query(sql, (err, results) => {
     if (err) {
       console.error("Erro ao pegar dados:", err);
@@ -112,68 +112,5 @@ app.get("/api/unidades", (req, res) => {
 
     console.log("Resultados da consulta:", results);  // Verifique se está recebendo resultados
     res.json(results);
-  });
-});
-
-app.put("/api/edit", (req, res) => {
-  const { id, ...updates } = req.body; // Extrai o id e os outros campos dinamicamente
-
-  if (!id) {
-    return res.status(400).json({ error: "O ID é obrigatório" });
-  }
-
-  if (Object.keys(updates).length === 0) {
-    return res.status(400).json({ error: "Nenhum campo para atualizar" });
-  }
-
-  // Monta dinamicamente os campos e placeholders para a query SQL
-  const fields = Object.keys(updates).map(field => `${field} = ?`).join(", ");
-  const values = Object.values(updates);
-
-  const sql = `UPDATE unidades SET ${fields} WHERE id = ?`;
-
-  db.query(sql, [...values, id], (err, result) => {
-    if (err) {
-      console.error("Erro ao atualizar unidade:", err);
-      return res.status(500).json({ error: "Erro ao atualizar unidade" });
-    }
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Nenhuma unidade encontrada com esse ID" });
-    }
-
-    res.json({ message: "Unidade atualizada com sucesso" });
-  });
-});
-
-
-app.delete("/api/delete/:tableName/:id", (req, res) => {
-  const { tableName, id } = req.params; // Pegando ID e tableName da URL
-
-  // Verifica se os dados necessários foram passados
-  if (!id || !tableName) {
-    return res.status(400).json({ error: "O ID e o nome da tabela são obrigatórios" });
-  }
-
-  // Proteção contra SQL Injection
-  const allowedTables = ["unidades", "outra_tabela", "mais_tabelas"]; // Defina as tabelas permitidas
-  if (!allowedTables.includes(tableName)) {
-    return res.status(400).json({ error: "Tabela não permitida" });
-  }
-
-  // Query SQL para deletar o item da tabela especificada
-  const sql = `DELETE FROM ${tableName} WHERE id = ?`;
-
-  db.query(sql, [id], (err, result) => {
-    if (err) {
-      console.error("Erro ao deletar registro:", err);
-      return res.status(500).json({ error: "Erro ao deletar registro" });
-    }
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Nenhum registro encontrado com esse ID" });
-    }
-
-    res.json({ message: `Registro deletado com sucesso da tabela ${tableName}` });
   });
 });
