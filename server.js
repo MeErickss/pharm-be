@@ -146,3 +146,22 @@ app.get("/api/functions", (req, res) => {
     res.json(results);
   });
 });
+
+app.get("/api/query", (req, res) => {
+  const { table, column, value } = req.query; // Obtém os parâmetros da URL
+
+  if (!table || !column || !value) {
+    return res.status(400).send("Parâmetros insuficientes");
+  }
+
+  const sql = `SELECT * FROM ?? WHERE ?? = ?`; // Query com placeholders seguros
+  db.query(sql, [table, column, value], (err, results) => {
+    if (err) {
+      console.error("Erro ao pegar dados:", err);
+      return res.status(500).send("Erro ao pegar dados");
+    }
+
+    res.json(results);
+  });
+});
+
