@@ -67,10 +67,10 @@ app.get("/api/users", (req, res) => {
   });
 });
 
-app.get("/api/parametros", (req, res) => {
+app.get("/api/parametros_producao", (req, res) => {
   console.log("Endpoint /api/parametros chamado");
 
-  const sql = "SELECT * FROM parametros";
+  const sql = "SELECT * FROM parametros WHERE funcao='PRODUCAO'";
   db.query(sql, (err, results) => {
     if (err) {
       console.error("Erro ao pegar dados:", err);
@@ -148,14 +148,28 @@ app.get("/api/functions", (req, res) => {
 });
 
 app.get("/api/query", (req, res) => {
+  const verify = {
+    "parametros_producao": "SELECT * FROM parametros WHERE FUNCAO = 'PRODUCAO' AND ?? = ?",
+    "parametros_armazenamento": "SELECT * FROM parametros WHERE FUNCAO = 'ARMAZENAMENTO' AND ?? = ?",
+    "tipos_parametros": "SELECT * FROM tipos_parametros WHERE ?? = ?",
+    "users": "SELECT * FROM users WHERE ?? = ?",
+    "unidades": "SELECT * FROM unidades WHERE ?? = ?",
+    "funcoes": "SELECT * FROM funcoes WHERE ?? = ?",
+    "status": "SELECT * FROM status WHERE ?? = ?"
+  };
+
   const { table, column, value } = req.query; // Obtém os parâmetros da URL
 
   if (!table || !column || !value) {
     return res.status(400).send("Parâmetros insuficientes");
   }
 
-  const sql = `SELECT * FROM ?? WHERE ?? = ?`; // Query com placeholders seguros
-  db.query(sql, [table, column, value], (err, results) => {
+  const sql = verify[table];
+  if (!sql) {
+    return res.status(400).send("Tabela inválida");
+  }
+
+  db.query(sql, [column, value], (err, results) => {
     if (err) {
       console.error("Erro ao pegar dados:", err);
       return res.status(500).send("Erro ao pegar dados");
@@ -165,3 +179,38 @@ app.get("/api/query", (req, res) => {
   });
 });
 
+app.delete("/api/delete", (req, res) => {
+  const verify = {
+    "parametros_producao": "DELETE FROM parametros WHERE FUNCAO = 'PRODUCAO' AND ID = ?",
+    "parametros_armazenamento": "DELETE FROM parametros WHERE FUNCAO = 'ARMAZENAMENTO' AND ID = ?",
+    "tipos_parametros": "DELETE FROM tipos_parametros WHERE ID = ?",
+    "users": "DELETE FROM users WHERE ID = ?",
+    "unidades": "DELETE FROM unidades WHERE ID = ?",
+    "funcoes": "DELETE FROM funcoes WHERE ID = ?",
+    "status": "DELETE FROM status WHERE ID = ?"
+  };
+
+  const { table, value } = req.query; // Obtém os parâmetros da URL
+
+  if (!table || !value) {
+    return res.status(400).send("Parâmetros insuficientes");
+  }
+
+  const sql = verify[table];
+  if (!sql) {
+    return res.status(400).send("Tabela inválida");
+  }
+
+  db.query(sql, [value], (err, results) => {
+    if (err) {
+      console.error("Erro ao deletar dados:", err);
+      return res.status(500).send("Erro ao deletar dados");
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).send("Nenhum registro encontrado para deletar");
+    }
+
+    res.send("Registro deletado com sucesso");
+  });
+});
