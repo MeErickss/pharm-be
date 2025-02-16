@@ -187,7 +187,7 @@ app.delete("/api/delete", (req, res) => {
     "users": "DELETE FROM users WHERE ID = ?",
     "unidades": "DELETE FROM unidades WHERE ID = ?",
     "funcoes": "DELETE FROM funcoes WHERE ID = ?",
-    "status": "DELETE FROM status WHERE ID = ?"
+    "status": "DELETE FROM status WHERE ID = ?",
   };
 
   const { table, value } = req.query; // Obtém os parâmetros da URL
