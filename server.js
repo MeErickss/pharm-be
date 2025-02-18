@@ -51,101 +51,39 @@ db.connect((err) => {
 });
 
 // Endpoint para pegar dados
-app.get("/api/users", (req, res) => {
-  console.log("Endpoint /api/users chamado");
 
-  const sql = "SELECT * FROM users";
+app.get("/api/table", (req, res) => {
+  const verify = {
+    "parametros_producao": "SELECT * FROM parametros WHERE FUNCAO='PRODUCAO'",
+    "parametros_armazenamento": "SELECT * FROM parametros WHERE FUNCAO='ARMAZENAMENTO'",
+    "tipos_parametros": "SELECT * FROM tipos_parametros",
+    "users": "SELECT * FROM users",
+    "unidades": "SELECT * FROM unidades",
+    "funcoes": "SELECT * FROM funcoes",
+    "status": "SELECT * FROM status"
+  };
+
+  const { table } = req.query; // Obtém os parâmetros da URL
+
+  if (!table) {
+    return res.status(400).send("Parâmetros insuficientes");
+  }
+
+  const sql = verify[table];
+  if (!sql) {
+    return res.status(400).send("Tabela inválida");
+  }
+
   db.query(sql, (err, results) => {
     if (err) {
       console.error("Erro ao pegar dados:", err);
-      res.status(500).send("Erro ao pegar dados");
-      return;
+      return res.status(500).send("Erro ao pegar dados");
     }
 
-    console.log("Resultados da consulta:", results);  // Verifique se está recebendo resultados
     res.json(results);
   });
 });
 
-app.get("/api/parametros_producao", (req, res) => {
-  console.log("Endpoint /api/parametros chamado");
-
-  const sql = "SELECT * FROM parametros WHERE funcao='PRODUCAO'";
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error("Erro ao pegar dados:", err);
-      res.status(500).send("Erro ao pegar dados");
-      return;
-    }
-
-    console.log("Resultados da consulta:", results);  // Verifique se está recebendo resultados
-    res.json(results);
-  });
-});
-
-app.get("/api/tipos_parametros", (req, res) => {
-  console.log("Endpoint /api/tipos_parametros chamado");
-
-  const sql = "SELECT * FROM tipos_parametros";
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error("Erro ao pegar dados:", err);
-      res.status(500).send("Erro ao pegar dados");
-      return;
-    }
-
-    console.log("Resultados da consulta:", results);  // Verifique se está recebendo resultados
-    res.json(results);
-  });
-});
-
-app.get("/api/unidades", (req, res) => {
-  console.log("Endpoint /api/unidades chamado");
-
-  const sql = "SELECT * FROM unidades";
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error("Erro ao pegar dados:", err);
-      res.status(500).send("Erro ao pegar dados");
-      return;
-    }
-
-    console.log("Resultados da consulta:", results);  // Verifique se está recebendo resultados
-    res.json(results);
-  });
-});
-
-app.get("/api/status", (req, res) => {
-  console.log("Endpoint /api/status chamado");
-
-  const sql = "SELECT * FROM status";
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error("Erro ao pegar dados:", err);
-      res.status(500).send("Erro ao pegar dados");
-      return;
-    }
-
-    console.log("Resultados da consulta:", results);  // Verifique se está recebendo resultados
-    res.json(results);
-  });
-});
-
-app.get("/api/functions", (req, res) => {
-  console.log("Endpoint /api/functions chamado");
-
-  const sql = "SELECT * FROM funcoes";
-  db.query(sql, (err, results) => {
-    if (err) {
-      console.error("Erro ao pegar dados:", err);
-      res.status(500).send("Erro ao pegar dados");
-      return;
-    }
-
-    console.log("Resultados da consulta:", results);  // Verifique se está recebendo resultados
-    res.json(results);
-  });
-});
 
 app.get("/api/query", (req, res) => {
   const verify = {
@@ -178,6 +116,38 @@ app.get("/api/query", (req, res) => {
     res.json(results);
   });
 });
+
+app.get("/api/select", (req, res) => {
+  const verify = {
+    "UNID": "SELECT * FROM unidades",
+    "STATUS": "SELECT * FROM status",
+    "TIPO": "SELECT * FROM tipos_parametros",
+    "FUNCAO": "SELECT * FROM funcoes"
+  };
+
+  const { table } = req.query; // Obtém os parâmetros da URL
+
+  if (!table) {
+    return res.status(400).send("Parâmetros insuficientes");
+  }
+
+  const sql = verify[table];
+  if (!sql) {
+    return res.status(400).send("Tabela inválida");
+  }
+
+  console.log(`Executando SQL: ${sql}`); // Debugging
+
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Erro ao pegar dados:", err);
+      return res.status(500).send("Erro ao pegar dados");
+    }
+
+    res.json(results);
+  });
+});
+
 
 app.delete("/api/delete", (req, res) => {
   const verify = {
@@ -214,3 +184,4 @@ app.delete("/api/delete", (req, res) => {
     res.send("Registro deletado com sucesso");
   });
 });
+
