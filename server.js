@@ -70,6 +70,7 @@ app.get("/api/table", (req, res) => {
   }
 
   const sql = verify[table];
+  console.log("a")
   if (!sql) {
     return res.status(400).send("Tabela inválida");
   }
