@@ -70,7 +70,6 @@ app.get("/api/table", (req, res) => {
   }
 
   const sql = verify[table];
-  console.log("a")
   if (!sql) {
     return res.status(400).send("Tabela inválida");
   }
@@ -183,6 +182,32 @@ app.delete("/api/delete", (req, res) => {
     }
 
     res.send("Registro deletado com sucesso");
+  });
+});
+
+app.post("/api/insert", (req, res) => {
+  const { table, values } = req.body;
+
+  if (!table || !values) {
+    return res.status(400).json({ error: "Parâmetros insuficientes. Necessário: table, values" });
+  }
+
+  // Criando a query dinâmica de INSERT
+  const fields = Object.keys(values).join(", ");
+  const placeholders = Object.keys(values).map(() => "?").join(", ");
+  const valuesArray = Object.values(values);
+
+  const sql = `INSERT INTO ${table} (${fields}) VALUES (${placeholders})`;
+
+  console.log("Executando SQL:", sql, valuesArray); // Para debug
+
+  db.query(sql, valuesArray, (err, results) => {
+    if (err) {
+      console.error("Erro ao inserir dados:", err);
+      return res.status(500).json({ error: "Erro ao inserir dados" });
+    }
+
+    res.json({ message: "Registro inserido com sucesso!" });
   });
 });
 
