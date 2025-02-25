@@ -20,35 +20,185 @@ const db = mysql.createConnection({
 });
 
 // Conectar ao banco de dados
-db.connect((err) => {
+db.connect(err => {
   if (err) {
-    console.error("Erro ao conectar ao banco de dados:", err);
+    console.error('Erro ao conectar ao banco de dados:', err);
     throw err;
   }
-  console.log("Conectado ao banco de dados!");
+  console.log('Conectado ao banco de dados');
 
-  // Criação da tabela se não existir
-  const criarTabela = `
-    CREATE TABLE IF NOT EXISTS users (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      login VARCHAR(255) NOT NULL,
-      password VARCHAR(255) NOT NULL
-    );
-  `;
+  const tabelas = [
+    `CREATE TABLE IF NOT EXISTS status(
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      DESCRICAO VARCHAR(255) NOT NULL UNIQUE
+    )`,
 
-  db.query(criarTabela, (err, result) => {
-    if (err) {
-      console.error("Erro ao criar tabela:", err);
-      throw err;
-    }
-    console.log("Tabela criada ou já existente.");
+    `CREATE TABLE IF NOT EXISTS log_alarmes(
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      STATUS VARCHAR(90) NOT NULL,
+      FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO)
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS log_producao(
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      STATUS VARCHAR(90) NOT NULL,
+      FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO)
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS medidas(
+      ID INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT UNIQUE,
+      NOME VARCHAR(90) NOT NULL,
+      STATUS VARCHAR(90) NOT NULL,
+      FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO)
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS funcoes(
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      NOME VARCHAR(255) NOT NULL UNIQUE,
+      STATUS VARCHAR(90) NOT NULL,
+      FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO)
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS unidades(
+      ID INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT UNIQUE,
+      UNIDADE VARCHAR(255) NOT NULL UNIQUE,
+      ABREVIACAO VARCHAR(10) NOT NULL,
+      STATUS VARCHAR(90) NOT NULL,
+      FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO)
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS medidas_unidades(
+      ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+      ID_UNIDADE INT NOT NULL,
+      ID_TIPO INT NOT NULL,
+      FOREIGN KEY (ID_TIPO) REFERENCES medidas(ID),
+      FOREIGN KEY (ID_UNIDADE) REFERENCES unidades(ID)
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS parametros(
+      ID INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT NOT NULL,
+      PARAMETRO VARCHAR(255) NOT NULL,
+      VALOR INTEGER NOT NULL,
+      VL_MIN INTEGER NOT NULL,
+      VL_MAX INTEGER NOT NULL,
+      STATUS VARCHAR(90) NOT NULL,
+      FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO)
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS parametros_unidades(
+      ID INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+      ID_PARAMETROS INT NOT NULL,
+      ID_UNIDADES INT NOT NULL,
+      FOREIGN KEY (ID_PARAMETROS) REFERENCES parametros(ID),
+      FOREIGN KEY (ID_UNIDADES) REFERENCES unidades(ID)
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS parametros_medidas(
+      ID INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+      ID_PARAMETROS INT NOT NULL,
+      ID_MEDIDAS INT NOT NULL,
+      FOREIGN KEY (ID_PARAMETROS) REFERENCES parametros(ID),
+      FOREIGN KEY (ID_MEDIDAS) REFERENCES medidas(ID)
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS parametros_funcoes(
+      ID INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+      ID_PARAMETROS INT NOT NULL,
+      ID_FUNCOES INT NOT NULL,
+      FOREIGN KEY (ID_PARAMETROS) REFERENCES parametros(ID),
+      FOREIGN KEY (ID_FUNCOES) REFERENCES funcoes(ID)
+    )`,
+
+    `CREATE TABLE IF NOT EXISTS users(
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      LOGIN VARCHAR(255) NOT NULL,
+      PASSWORD VARCHAR(255) NOT NULL,
+      NIVEL INT NOT NULL,
+      STATUS VARCHAR(90) NOT NULL,
+      FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO)
+    )`
+  ];
+
+  tabelas.forEach(criarTabela => {
+    db.query(criarTabela, (err, result) => {
+      if (err) {
+        console.error("Erro ao criar tabela:", err);
+        throw err;
+      }
+    });
   });
+  console.log("Tabelas criadas.")
 
-  // Agora que a conexão foi estabelecida, iniciamos o servidor
   app.listen(port, () => {
     console.log(`Servidor rodando na porta ${port}`);
   });
-});
+  });
+
+  const insert = [
+    `SET FOREIGN_KEY_CHECKS = 0;`,
+    
+    `DELETE FROM parametros_funcoes`,
+    `DELETE FROM parametros_medidas`,
+    `DELETE FROM parametros_unidades`,
+    `DELETE FROM medidas_unidades`,
+    `DELETE FROM log_producao`,
+    `DELETE FROM log_alarmes`,
+    `DELETE FROM parametros`,
+    `DELETE FROM medidas`,
+    `DELETE FROM unidades`,
+    `DELETE FROM funcoes`,
+    `DELETE FROM users`,
+    `DELETE FROM status`,
+    
+    `SET FOREIGN_KEY_CHECKS = 1;`,
+    
+    `INSERT INTO status VALUES (1, 'ATIVO');`,
+    `INSERT INTO status VALUES (2, 'INATIVO');`,
+    `INSERT INTO status VALUES (3, 'BLOQUEADO');`,
+    `INSERT INTO status VALUES (4, 'RETIDO');`,
+    
+    `INSERT INTO funcoes VALUES (1, 'PRODUCAO', 'ATIVO');`,
+    `INSERT INTO funcoes VALUES (2, 'ARMAZENAMENTO', 'ATIVO');`,
+    
+    `INSERT INTO users VALUES (1, 'admin@gmail.com', '0000', 3, 'ATIVO');`,
+    `INSERT INTO users VALUES (2, 'maintenance@gmail.com', '1111', 2, 'ATIVO');`,
+    `INSERT INTO users VALUES (3, 'operator@gmail.com', '2222', 1, 'ATIVO');`,
+    
+    `INSERT INTO medidas VALUES (1, 'TEMPO', 'ATIVO');`,
+    `INSERT INTO medidas VALUES (2, 'PRESSAO', 'ATIVO');`,
+    
+    `INSERT INTO unidades VALUES (1, 'SEGUNDO', 'SEG', 'TEMPO', 'ATIVO');`,
+    `INSERT INTO unidades VALUES (2, 'HORA', 'HR', 'TEMPO', 'ATIVO');`,
+    `INSERT INTO unidades VALUES (3, 'PSI', 'PSI', 'PRESSAO', 'ATIVO');`,
+    
+    `INSERT INTO parametros VALUES (1,'TEMPO PARA DRENAGEM DO TANQUE DE MISTURA [TQ-100]', 20, 10, 30, 'ATIVO');`,
+    `INSERT INTO parametros VALUES (2,'TEMPO PARA DRENAGEM DO TANQUE DE ADIÇÃO [TQ-200]', 30, 15, 45, 'ATIVO');`,
+    
+    `INSERT INTO medidas_unidades VALUES (1, 1, 1);`,
+    `INSERT INTO medidas_unidades VALUES (2, 2, 1);`,
+    `INSERT INTO medidas_unidades VALUES (3, 3, 2);`,
+    
+    `INSERT INTO parametros_unidades VALUES (1, 1, 1);`,
+    `INSERT INTO parametros_unidades VALUES (2, 2, 1);`,
+    
+    `INSERT INTO parametros_medidas VALUES (1, 1, 1);`,
+    `INSERT INTO parametros_medidas VALUES (2, 2, 1);`,
+    
+    `INSERT INTO parametros_funcoes VALUES (1, 1, 1);`,
+    `INSERT INTO parametros_funcoes VALUES (2, 2, 1);`
+  ];
+  
+  
+  insert.forEach(query => {
+    db.query(query, (err, result) => {
+      if (err) {
+        console.error("Erro ao executar query:", query, err);
+      } else {
+        console.log("Query executada com sucesso:", query);
+      }
+    });
+  });
+  
 
 // Endpoint para pegar dados
 
@@ -210,4 +360,3 @@ app.post("/api/insert", (req, res) => {
     res.json({ message: "Registro inserido com sucesso!" });
   });
 });
-
