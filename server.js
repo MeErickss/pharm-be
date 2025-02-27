@@ -1,17 +1,13 @@
 import express from 'express';
-import mysql from 'mysql2';  // Alteração para 'mysql2'
+import mysql from 'mysql2';
 import cors from 'cors';
 
 const app = express();
 const port = 5000;
 
-// Habilitando CORS
 app.use(cors());
-
-// Para ler dados em formato JSON
 app.use(express.json());
 
-// Configuração do banco de dados com 'mysql2'
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -19,7 +15,6 @@ const db = mysql.createConnection({
   database: "pharmbd",
 });
 
-// Conectar ao banco de dados
 db.connect((err) => {
   if (err) {
     console.error("Erro ao conectar ao banco de dados:", err);
@@ -27,28 +22,127 @@ db.connect((err) => {
   }
   console.log("Conectado ao banco de dados!");
 
-  // Criação da tabela se não existir
-  const criarTabela = `
-    CREATE TABLE IF NOT EXISTS users (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      login VARCHAR(255) NOT NULL,
-      password VARCHAR(255) NOT NULL
-    );
-  `;
+  const tabelas = [
+    `CREATE TABLE IF NOT EXISTS status (
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      DESCRICAO VARCHAR(255) NOT NULL UNIQUE
+    );`,
+    `CREATE TABLE IF NOT EXISTS log_alarmes (
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      STATUS VARCHAR(90) NOT NULL,
+      FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO)
+    );`,
+    `CREATE TABLE IF NOT EXISTS log_producao (
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      STATUS VARCHAR(90) NOT NULL,
+      FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO)
+    );`,
+    `CREATE TABLE IF NOT EXISTS medidas (
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      NOME VARCHAR(90) NOT NULL UNIQUE,
+      STATUS VARCHAR(90) NOT NULL,
+      FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO)
+    );`,
+    `CREATE TABLE IF NOT EXISTS funcoes (
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      NOME VARCHAR(255) NOT NULL UNIQUE,
+      STATUS VARCHAR(90) NOT NULL,
+      FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO)
+    );`,
+    `CREATE TABLE IF NOT EXISTS unidades (
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      NOME VARCHAR(255) NOT NULL UNIQUE,
+      TIPO VARCHAR(90) NOT NULL,
+      ABREVIACAO VARCHAR(10) NOT NULL,
+      STATUS VARCHAR(90) NOT NULL,
+      FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO),
+      FOREIGN KEY (TIPO) REFERENCES medidas(NOME)
+    );`,
+    `CREATE TABLE IF NOT EXISTS medidas_unidades (
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      ID_UNIDADE INT NOT NULL,
+      ID_TIPO INT NOT NULL,
+      FOREIGN KEY (ID_TIPO) REFERENCES medidas(ID),
+      FOREIGN KEY (ID_UNIDADE) REFERENCES unidades(ID)
+    );`,
+    `CREATE TABLE IF NOT EXISTS parametros (
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      FUNCAO VARCHAR(255) NOT NULL,
+      PARAMETRO VARCHAR(255) NOT NULL,
+      MEDIDA VARCHAR(255) NOT NULL,
+      UNIDADE VARCHAR(255) NOT NULL,
+      VALOR INT NOT NULL,
+      VL_MIN INT NOT NULL,
+      VL_MAX INT NOT NULL,
+      STATUS VARCHAR(90) NOT NULL,
+      FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO),
+      FOREIGN KEY (FUNCAO) REFERENCES funcoes(NOME),
+      FOREIGN KEY (MEDIDA) REFERENCES medidas(NOME),
+      FOREIGN KEY (UNIDADE) REFERENCES unidades(NOME)
+    );`,
+    `CREATE TABLE IF NOT EXISTS parametros_unidades (
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      ID_PARAMETROS INT NOT NULL,
+      ID_UNIDADES INT NOT NULL,
+      FOREIGN KEY (ID_PARAMETROS) REFERENCES parametros(ID),
+      FOREIGN KEY (ID_UNIDADES) REFERENCES unidades(ID)
+    );`,
+    `CREATE TABLE IF NOT EXISTS parametros_medidas (
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      ID_PARAMETROS INT NOT NULL,
+      ID_MEDIDAS INT NOT NULL,
+      FOREIGN KEY (ID_PARAMETROS) REFERENCES parametros(ID),
+      FOREIGN KEY (ID_MEDIDAS) REFERENCES medidas(ID)
+    );`,
+    `CREATE TABLE IF NOT EXISTS parametros_funcoes (
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      ID_PARAMETROS INT NOT NULL,
+      ID_FUNCOES INT NOT NULL,
+      FOREIGN KEY (ID_PARAMETROS) REFERENCES parametros(ID),
+      FOREIGN KEY (ID_FUNCOES) REFERENCES funcoes(ID)
+    );`,
+    `CREATE TABLE IF NOT EXISTS users (
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      LOGIN VARCHAR(255) NOT NULL,
+      PASSWORD VARCHAR(255) NOT NULL,
+      NIVEL INT NOT NULL,
+      STATUS VARCHAR(90) NOT NULL,
+      FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO)
+    );`
+  ];
 
-  db.query(criarTabela, (err, result) => {
-    if (err) {
-      console.error("Erro ao criar tabela:", err);
-      throw err;
-    }
-    console.log("Tabela criada ou já existente.");
+  tabelas.forEach((query) => {
+    db.query(query, (err, result) => {
+      if (err) {
+        console.error("Erro ao criar tabela:", err);
+      }
+    });
   });
 
-  // Agora que a conexão foi estabelecida, iniciamos o servidor
+  const inserts = [
+    `INSERT IGNORE INTO status VALUES (1,'ATIVO'), (2,'INATIVO'), (3,'BLOQUEADO'), (4,'RETIDO');`,
+    `INSERT IGNORE INTO funcoes VALUES (1,'PRODUCAO','ATIVO'), (2,'ARMAZENAMENTO','ATIVO');`,
+    `INSERT IGNORE INTO users VALUES (1,'admin@gmail.com','0000',3,'ATIVO'), (2,'maintenance@gmail.com','1111',2,'ATIVO'), (3,'operator@gmail.com','2222',1,'ATIVO');`,
+    `INSERT IGNORE INTO medidas VALUES (1,'TEMPO','ATIVO'), (2,'PRESSAO','ATIVO');`,
+    `INSERT IGNORE INTO unidades VALUES(1,'SEGUNDO', 'TEMPO','SEG','ATIVO'), (3,'PSI', 'PRESSAO','PSI','ATIVO'), (2,'HORA', 'TEMPO','HR','ATIVO');`,
+    `INSERT IGNORE INTO parametros VALUES (1,'PRODUCAO','TEMPO PARA DRENAGEM DO TANQUE DE MISTURA [TQ-100]','TEMPO','SEGUNDO',20,10,30,'ATIVO'), (2,'PRODUCAO','TEMPO PARA DRENAGEM DO TANQUE DE ADIÇÃO [TQ-200]','TEMPO','SEGUNDO',30,15,45,'ATIVO');`
+  ];
+
+  inserts.forEach((query) => {
+    db.query(query, (err, result) => {
+      if (err) {
+        console.error("Erro ao inserir dados:", err);
+      }
+    });
+  });
+
+  console.log("Tabelas criadas e dados inseridos.");
+
   app.listen(port, () => {
     console.log(`Servidor rodando na porta ${port}`);
   });
 });
+
 
 // Endpoint para pegar dados
 
