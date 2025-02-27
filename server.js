@@ -135,57 +135,42 @@ db.connect(err => {
   });
 
   const insert = [
-    `SET FOREIGN_KEY_CHECKS = 0;`,
+    `INSERT IGNORE INTO status VALUES (1, 'ATIVO');`,
+    `INSERT IGNORE INTO status VALUES (2, 'INATIVO');`,
+    `INSERT IGNORE INTO status VALUES (3, 'BLOQUEADO');`,
+    `INSERT IGNORE INTO status VALUES (4, 'RETIDO');`,
     
-    `DELETE FROM parametros_funcoes`,
-    `DELETE FROM parametros_medidas`,
-    `DELETE FROM parametros_unidades`,
-    `DELETE FROM medidas_unidades`,
-    `DELETE FROM log_producao`,
-    `DELETE FROM log_alarmes`,
-    `DELETE FROM parametros`,
-    `DELETE FROM medidas`,
-    `DELETE FROM unidades`,
-    `DELETE FROM funcoes`,
-    `DELETE FROM users`,
-    `DELETE FROM status`,
+    `INSERT IGNORE INTO funcoes VALUES (1, 'PRODUCAO', 'ATIVO');`,
+    `INSERT IGNORE INTO funcoes VALUES (2, 'ARMAZENAMENTO', 'ATIVO');`,
     
-    `SET FOREIGN_KEY_CHECKS = 1;`,
+    `INSERT IGNORE INTO users VALUES (1, 'admin@gmail.com', '0000', 3, 'ATIVO');`,
+    `INSERT IGNORE INTO users VALUES (2, 'maintenance@gmail.com', '1111', 2, 'ATIVO');`,
+    `INSERT IGNORE INTO users VALUES (3, 'operator@gmail.com', '2222', 1, 'ATIVO');`,
     
-    `INSERT INTO status VALUES (1, 'ATIVO');`,
-    `INSERT INTO status VALUES (2, 'INATIVO');`,
-    `INSERT INTO status VALUES (3, 'BLOQUEADO');`,
-    `INSERT INTO status VALUES (4, 'RETIDO');`,
+    `INSERT IGNORE INTO medidas VALUES (1, 'TEMPO', 'ATIVO');`,
+    `INSERT IGNORE INTO medidas VALUES (2, 'PRESSAO', 'ATIVO');`,
     
-    `INSERT INTO funcoes VALUES (1, 'PRODUCAO', 'ATIVO');`,
-    `INSERT INTO funcoes VALUES (2, 'ARMAZENAMENTO', 'ATIVO');`,
+    `INSERT IGNORE INTO unidades VALUES (1, 'SEGUNDO', 'SEG', 'TEMPO', 'ATIVO');`,
+    `INSERT IGNORE INTO unidades VALUES (2, 'HORA', 'HR', 'TEMPO', 'ATIVO');`,
+    `INSERT IGNORE INTO unidades VALUES (3, 'PSI', 'PSI', 'PRESSAO', 'ATIVO');`,
     
-    `INSERT INTO users VALUES (1, 'admin@gmail.com', '0000', 3, 'ATIVO');`,
-    `INSERT INTO users VALUES (2, 'maintenance@gmail.com', '1111', 2, 'ATIVO');`,
-    `INSERT INTO users VALUES (3, 'operator@gmail.com', '2222', 1, 'ATIVO');`,
+    `INSERT IGNORE INTO parametros (ID, PARAMETRO, VALOR, VL_MIN, VL_MAX, STATUS)
+    VALUES (1, 'TEMPO PARA DRENAGEM DO TANQUE DE MISTURA [TQ-100]', 20, 10, 30, 'ATIVO');`,
+    `INSERT IGNORE INTO parametros (ID, PARAMETRO, VALOR, VL_MIN, VL_MAX, STATUS)
+    VALUES (2, 'TEMPO PARA DRENAGEM DO TANQUE DE ADIÇÃO [TQ-200]', 30, 15, 45, 'ATIVO');`,
     
-    `INSERT INTO medidas VALUES (1, 'TEMPO', 'ATIVO');`,
-    `INSERT INTO medidas VALUES (2, 'PRESSAO', 'ATIVO');`,
+    `INSERT IGNORE INTO medidas_unidades VALUES (1, 1, 1);`,
+    `INSERT IGNORE INTO medidas_unidades VALUES (2, 2, 1);`,
+    `INSERT IGNORE INTO medidas_unidades VALUES (3, 3, 2);`,
     
-    `INSERT INTO unidades VALUES (1, 'SEGUNDO', 'SEG', 'TEMPO', 'ATIVO');`,
-    `INSERT INTO unidades VALUES (2, 'HORA', 'HR', 'TEMPO', 'ATIVO');`,
-    `INSERT INTO unidades VALUES (3, 'PSI', 'PSI', 'PRESSAO', 'ATIVO');`,
+    `INSERT IGNORE INTO parametros_unidades VALUES (1, 1, 1);`,
+    `INSERT IGNORE INTO parametros_unidades VALUES (2, 2, 1);`,
     
-    `INSERT INTO parametros VALUES (1,'TEMPO PARA DRENAGEM DO TANQUE DE MISTURA [TQ-100]', 20, 10, 30, 'ATIVO');`,
-    `INSERT INTO parametros VALUES (2,'TEMPO PARA DRENAGEM DO TANQUE DE ADIÇÃO [TQ-200]', 30, 15, 45, 'ATIVO');`,
+    `INSERT IGNORE INTO parametros_medidas VALUES (1, 1, 1);`,
+    `INSERT IGNORE INTO parametros_medidas VALUES (2, 2, 1);`,
     
-    `INSERT INTO medidas_unidades VALUES (1, 1, 1);`,
-    `INSERT INTO medidas_unidades VALUES (2, 2, 1);`,
-    `INSERT INTO medidas_unidades VALUES (3, 3, 2);`,
-    
-    `INSERT INTO parametros_unidades VALUES (1, 1, 1);`,
-    `INSERT INTO parametros_unidades VALUES (2, 2, 1);`,
-    
-    `INSERT INTO parametros_medidas VALUES (1, 1, 1);`,
-    `INSERT INTO parametros_medidas VALUES (2, 2, 1);`,
-    
-    `INSERT INTO parametros_funcoes VALUES (1, 1, 1);`,
-    `INSERT INTO parametros_funcoes VALUES (2, 2, 1);`
+    `INSERT IGNORE INTO parametros_funcoes VALUES (1, 1, 1);`,
+    `INSERT IGNORE INTO parametros_funcoes VALUES (2, 2, 1);`
   ];
   
   
