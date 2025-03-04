@@ -150,9 +150,9 @@ db.connect(err => {
     `INSERT IGNORE INTO medidas VALUES (1, 'TEMPO', 'ATIVO');`,
     `INSERT IGNORE INTO medidas VALUES (2, 'PRESSAO', 'ATIVO');`,
     
-    `INSERT IGNORE INTO unidades VALUES (1, 'SEGUNDO', 'SEG', 'TEMPO', 'ATIVO');`,
-    `INSERT IGNORE INTO unidades VALUES (2, 'HORA', 'HR', 'TEMPO', 'ATIVO');`,
-    `INSERT IGNORE INTO unidades VALUES (3, 'PSI', 'PSI', 'PRESSAO', 'ATIVO');`,
+    `INSERT IGNORE INTO unidades VALUES (1, 'SEGUNDO', 'SEG', 'ATIVO');`,
+    `INSERT IGNORE INTO unidades VALUES (2, 'HORA', 'HR', 'ATIVO');`,
+    `INSERT IGNORE INTO unidades VALUES (3, 'PSI', 'PSI', 'ATIVO');`,
     
     `INSERT IGNORE INTO parametros (ID, PARAMETRO, VALOR, VL_MIN, VL_MAX, STATUS)
     VALUES (1, 'TEMPO PARA DRENAGEM DO TANQUE DE MISTURA [TQ-100]', 20, 10, 30, 'ATIVO');`,
@@ -189,7 +189,7 @@ db.connect(err => {
 
 app.get("/api/table", (req, res) => {
   const verify = {
-    "parametros_producao": "SELECT * FROM parametros WHERE FUNCAO='PRODUCAO'",
+    "parametros_producao": "SELECT p.*, m.NOME AS MEDIDA, f.NOME AS FUNCAO, u.UNIDADE AS UNIDADE FROM parametros p JOIN parametros_medidas pm ON p.ID = pm.ID_PARAMETROS JOIN medidas m ON pm.ID_MEDIDAS = m.ID JOIN parametros_funcoes pf ON p.ID = pf.ID_PARAMETROS JOIN funcoes f ON pf.ID_FUNCOES = f.ID JOIN parametros_unidades pu ON p.ID = pu.ID_PARAMETROS JOIN unidades u ON pu.ID_UNIDADES = u.ID WHERE f.ID = 1;",
     "parametros_armazenamento": "SELECT * FROM parametros WHERE FUNCAO='ARMAZENAMENTO'",
     "tipos_parametros": "SELECT * FROM tipos_parametros",
     "users": "SELECT * FROM users",
@@ -222,7 +222,7 @@ app.get("/api/table", (req, res) => {
 
 app.get("/api/query", (req, res) => {
   const verify = {
-    "parametros_producao": "SELECT * FROM parametros WHERE FUNCAO = 'PRODUCAO' AND ?? = ?",
+    "parametros_producao": "SELECT p.*, m.NOME AS MEDIDA, f.NOME AS FUNCAO, u.UNIDADE AS UNIDADE FROM parametros p JOIN parametros_medidas pm ON p.ID = pm.ID_PARAMETROS JOIN medidas m ON pm.ID_MEDIDAS = m.ID JOIN parametros_funcoes pf ON p.ID = pf.ID_PARAMETROS JOIN funcoes f ON pf.ID_FUNCOES = f.ID JOIN parametros_unidades pu ON p.ID = pu.ID_PARAMETROS JOIN unidades u ON pu.ID_UNIDADES = u.ID WHERE f.ID = 1 AND ?? = ?",
     "parametros_armazenamento": "SELECT * FROM parametros WHERE FUNCAO = 'ARMAZENAMENTO' AND ?? = ?",
     "tipos_parametros": "SELECT * FROM tipos_parametros WHERE ?? = ?",
     "users": "SELECT * FROM users WHERE ?? = ?",
@@ -256,8 +256,7 @@ app.get("/api/select", (req, res) => {
   const verify = {
     "UNID": "SELECT * FROM unidades",
     "STATUS": "SELECT * FROM status",
-    "TIPO": "SELECT * FROM tipos_parametros",
-    "FUNCAO": "SELECT * FROM funcoes"
+    "MEDID":"SELECT * FROM medidas"
   };
 
   const { table } = req.query; // Obtém os parâmetros da URL
