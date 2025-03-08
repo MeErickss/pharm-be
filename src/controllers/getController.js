@@ -1,6 +1,6 @@
 import db from "../config/db.js";
 
-export const getParametros = (req, res) => {
+export const getController = (req, res) => {
   const queriesPermitidas = {
     "parametros_producao": `
       SELECT p.*, m.NOME AS MEDIDA, u.UNIDADE AS UNIDADE, f.NOME AS FUNCAO 

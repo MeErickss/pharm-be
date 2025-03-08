@@ -235,10 +235,9 @@ app.get("/api/table", (req, res) => {
 
 app.get("/api/select", (req, res) => {
   const verify = {
-    "UNIDADE": "SELECT UNIDADE FROM unidades",
     "STATUS": "SELECT DESCRICAO FROM status",
     "MEDIDA":"SELECT NOME FROM medidas",
-    "FUNCAO" : "SELECT NOME FROM funcoes"
+    "FUNCAO" : "SELECT NOME FROM funcoes",
   };
 
   const { table } = req.query; // Obtém os parâmetros da URL
@@ -255,6 +254,33 @@ app.get("/api/select", (req, res) => {
   console.log(`Executando SQL: ${sql}`); // Debugging
 
   db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Erro ao pegar dados:", err);
+      return res.status(500).send("Erro ao pegar dados");
+    }
+
+    res.json(results);
+  });
+});
+
+app.get("/api/selectunidade", (req, res) => {
+  const { value } = req.query; // Obtém os parâmetros da URL
+
+  if (!value) {
+    return res.status(400).send("Parâmetros insuficientes");
+  }
+
+  const sql = `
+    SELECT u.UNIDADE 
+    FROM unidades u 
+    LEFT JOIN medidas_unidades MU ON MU.ID_UNIDADE = u.ID 
+    LEFT JOIN medidas m ON m.ID = MU.ID_TIPO 
+    WHERE m.NOME = ?;
+  `;
+
+  console.log(`Executando SQL: ${sql} com valor: ${value}`); // Debugging
+
+  db.query(sql, [value], (err, results) => {
     if (err) {
       console.error("Erro ao pegar dados:", err);
       return res.status(500).send("Erro ao pegar dados");
