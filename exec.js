@@ -44,7 +44,7 @@ async function createTables() {
       STATUS VARCHAR(90) NOT NULL,
       FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO) ON DELETE CASCADE
     )`,
-    `CREATE TABLE IF NOT EXISTS medidas(
+    `CREATE TABLE IF NOT EXISTS grandezas(
       ID INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT UNIQUE,
       NOME VARCHAR(90) NOT NULL,
       STATUS VARCHAR(90) NOT NULL,
@@ -421,13 +421,7 @@ app.post("/api/insert", (req, res) => {
 
 app.put("/api/update", (req, res) => {
   const verify = {
-    "parametros_producao": "UPDATE p FROM parametros p JOIN parametros_funcoes pf ON p.ID = pf.ID_PARAMETROS JOIN funcoes f ON pf.ID_FUNCOES = f.ID WHERE f.NOME = 'PRODUCAO' AND p.ID = ?;",
-    "parametros_armazenamento": "DELETE FROM parametros WHERE FUNCAO = 'ARMAZENAMENTO' AND ID = ?",
-    "tipos_parametros": "DELETE FROM tipos_parametros WHERE ID = ?",
-    "users": "DELETE FROM users WHERE ID = ?",
-    "unidades": "DELETE FROM unidades WHERE ID = ?",
-    "funcoes": "DELETE FROM funcoes WHERE ID = ?",
-    "status": "DELETE FROM status WHERE ID = ?",
+    "parametros_producao": ['UPDATE parametros SET PARAMETRO="a",VZALOR=20,VL_MIN=10,VL_MAX=30,STATUS="ATIVO" WHERE ID = 1;','UPDATE parametros_medidas SET ID_PARAMETROS=,ID_MEDIDAS= WHERE ID=;',"UPDATE parametros_funcoes SET ID_PARAMETROS=,ID_FUNCOES= WHERE ID=","UPDATE parametros_unidades SET ID_PARAMETROS=,ID_UNIDADES= WHERE ID="]
   };
 
   const { table, value } = req.query; // Obtém os parâmetros da URL
