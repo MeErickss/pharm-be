@@ -44,7 +44,7 @@ async function createTables() {
       STATUS VARCHAR(90) NOT NULL,
       FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO) ON DELETE CASCADE
     )`,
-    `CREATE TABLE IF NOT EXISTS grandezas(
+    `CREATE TABLE IF NOT EXISTS medidas(
       ID INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT UNIQUE,
       NOME VARCHAR(90) NOT NULL,
       STATUS VARCHAR(90) NOT NULL,
@@ -416,7 +416,6 @@ app.post("/api/insert", (req, res) => {
     res.json({ message: "Parâmetro inserido com sucesso e relações criadas!" });
   });
 });
-
 
 
 app.put("/api/update", (req, res) => {
