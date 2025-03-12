@@ -420,30 +420,59 @@ app.post("/api/insert", (req, res) => {
 
 app.put("/api/update", (req, res) => {
   const verify = {
-    "parametros_producao": ['UPDATE parametros SET PARAMETRO="a",VZALOR=20,VL_MIN=10,VL_MAX=30,STATUS="ATIVO" WHERE ID = 1;','UPDATE parametros_medidas SET ID_PARAMETROS=,ID_MEDIDAS= WHERE ID=;',"UPDATE parametros_funcoes SET ID_PARAMETROS=,ID_FUNCOES= WHERE ID=","UPDATE parametros_unidades SET ID_PARAMETROS=,ID_UNIDADES= WHERE ID="]
+    parametros: [
+      `UPDATE parametros 
+       SET PARAMETRO=?, VALOR=?, VL_MIN=?, VL_MAX=?, STATUS=? 
+       WHERE ID = ?;`,
+      `UPDATE parametros_medidas pm 
+       JOIN medidas m ON m.NOME = ? 
+       SET pm.ID_MEDIDAS = m.ID 
+       WHERE pm.ID_PARAMETROS = ?;`,
+      `UPDATE parametros_unidades pu 
+       JOIN unidades u ON u.UNIDADE = ? 
+       SET pu.ID_UNIDADES = u.ID 
+       WHERE pu.ID_PARAMETROS = ?;`,
+      `UPDATE parametros_funcoes pf 
+       JOIN funcoes f ON f.NOME = ? 
+       SET pf.ID_FUNCOES = f.ID 
+       WHERE pf.ID_PARAMETROS = ?;`
+    ],
   };
 
-  const { table, value } = req.query; // Obtém os parâmetros da URL
+  const { table, values, id } = req.body; // Pegando os dados do corpo da requisição
 
-  if (!table || !value) {
+  if (!table || !values || !id) {
     return res.status(400).send("Parâmetros insuficientes");
   }
 
-  const sql = verify[table];
-  if (!sql) {
+  const sqlQueries = verify[table];
+  if (!sqlQueries) {
     return res.status(400).send("Tabela inválida");
   }
 
-  db.query(sql, [value], (err, results) => {
-    if (err) {
-      console.error("Erro ao deletar dados:", err);
-      return res.status(500).send("Erro ao deletar dados");
-    }
+  const queryParams = [
+    [values.PARAMETRO, values.VALOR, values.VL_MIN, values.VL_MAX, values.STATUS, id],
+    [values.MEDIDA, id],
+    [values.UNIDADE, id],
+    [values.FUNCAO, id]
+  ];
 
-    if (results.affectedRows === 0) {
-      return res.status(404).send("Nenhum registro encontrado para deletar");
-    }
+  let errorOccurred = false;
 
-    res.send("Registro deletado com sucesso");
+  sqlQueries.forEach((query, index) => {
+    if (errorOccurred) return; // Se um erro já ocorreu, interrompe a execução
+
+    db.query(query, queryParams[index], (err) => {
+      if (err) {
+        console.error(`Erro ao executar query ${index + 1}:`, err);
+        errorOccurred = true;
+        return res.status(500).send(`Erro ao atualizar ${table}`);
+      }
+
+      // Se for a última query e não houver erros, envia a resposta de sucesso
+      if (index === sqlQueries.length - 1) {
+        res.send("Registro atualizado com sucesso!");
+      }
+    });
   });
 });
