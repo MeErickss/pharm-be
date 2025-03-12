@@ -44,7 +44,7 @@ async function createTables() {
       STATUS VARCHAR(90) NOT NULL,
       FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO) ON DELETE CASCADE
     )`,
-    `CREATE TABLE IF NOT EXISTS medidas(
+    `CREATE TABLE IF NOT EXISTS grandeza(
       ID INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT UNIQUE,
       NOME VARCHAR(90) NOT NULL,
       STATUS VARCHAR(90) NOT NULL,
@@ -63,11 +63,11 @@ async function createTables() {
       STATUS VARCHAR(90) NOT NULL,
       FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO) ON DELETE CASCADE
     )`,
-    `CREATE TABLE IF NOT EXISTS medidas_unidades(
+    `CREATE TABLE IF NOT EXISTS grandeza_unidades(
       ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
       ID_UNIDADE INT NOT NULL,
-      ID_MEDIDAS INT NOT NULL,
-      FOREIGN KEY (ID_MEDIDAS) REFERENCES medidas(ID) ON DELETE CASCADE,
+      ID_GRANDEZA INT NOT NULL,
+      FOREIGN KEY (ID_GRANDEZA) REFERENCES grandeza(ID) ON DELETE CASCADE,
       FOREIGN KEY (ID_UNIDADE) REFERENCES unidades(ID) ON DELETE CASCADE
     )`,
     `CREATE TABLE IF NOT EXISTS parametros(
@@ -86,12 +86,12 @@ async function createTables() {
       FOREIGN KEY (ID_PARAMETROS) REFERENCES parametros(ID) ON DELETE CASCADE,
       FOREIGN KEY (ID_UNIDADES) REFERENCES unidades(ID) ON DELETE CASCADE
     )`,
-    `CREATE TABLE IF NOT EXISTS parametros_medidas(
+    `CREATE TABLE IF NOT EXISTS parametros_grandeza(
       ID INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
       ID_PARAMETROS INT NOT NULL,
-      ID_MEDIDAS INT NOT NULL,
+      ID_grandeza INT NOT NULL,
       FOREIGN KEY (ID_PARAMETROS) REFERENCES parametros(ID) ON DELETE CASCADE,
-      FOREIGN KEY (ID_MEDIDAS) REFERENCES medidas(ID) ON DELETE CASCADE
+      FOREIGN KEY (ID_grandeza) REFERENCES grandeza(ID) ON DELETE CASCADE
     )`,
     `CREATE TABLE IF NOT EXISTS parametros_funcoes(
       ID INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
@@ -141,8 +141,8 @@ async function insertInitialData() {
     `INSERT IGNORE INTO users VALUES (2, 'maintenance@gmail.com', '1111', 2, 'ATIVO');`,
     `INSERT IGNORE INTO users VALUES (3, 'operator@gmail.com', '2222', 1, 'ATIVO');`,
 
-    `INSERT IGNORE INTO medidas VALUES (1, 'TEMPO', 'ATIVO');`,
-    `INSERT IGNORE INTO medidas VALUES (2, 'PRESSAO', 'ATIVO');`,
+    `INSERT IGNORE INTO grandeza VALUES (1, 'TEMPO', 'ATIVO');`,
+    `INSERT IGNORE INTO grandeza VALUES (2, 'PRESSAO', 'ATIVO');`,
 
     `INSERT IGNORE INTO unidades VALUES (1, 'SEGUNDO', 'SEG', 'ATIVO');`,
     `INSERT IGNORE INTO unidades VALUES (2, 'HORA', 'HR', 'ATIVO');`,
@@ -153,15 +153,15 @@ async function insertInitialData() {
     `INSERT IGNORE INTO parametros (ID, PARAMETRO, VALOR, VL_MIN, VL_MAX, STATUS)
     VALUES (2, 'TEMPO PARA DRENAGEM DO TANQUE DE ADIÇÃO [TQ-200]', 30, 15, 45, 'ATIVO');`,
 
-    `INSERT IGNORE INTO medidas_unidades VALUES (1, 1, 1);`,
-    `INSERT IGNORE INTO medidas_unidades VALUES (2, 2, 1);`,
-    `INSERT IGNORE INTO medidas_unidades VALUES (3, 3, 2);`,
+    `INSERT IGNORE INTO grandeza_unidades VALUES (1, 1, 1);`,
+    `INSERT IGNORE INTO grandeza_unidades VALUES (2, 2, 1);`,
+    `INSERT IGNORE INTO grandeza_unidades VALUES (3, 3, 2);`,
 
     `INSERT IGNORE INTO parametros_unidades VALUES (1, 1, 1);`,
     `INSERT IGNORE INTO parametros_unidades VALUES (2, 2, 2);`,
 
-    `INSERT IGNORE INTO parametros_medidas VALUES (1, 1, 1);`,
-    `INSERT IGNORE INTO parametros_medidas VALUES (2, 2, 1);`,
+    `INSERT IGNORE INTO parametros_grandeza VALUES (1, 1, 1);`,
+    `INSERT IGNORE INTO parametros_grandeza VALUES (2, 2, 1);`,
 
     `INSERT IGNORE INTO parametros_funcoes VALUES (1, 1, 1);`,
     `INSERT IGNORE INTO parametros_funcoes VALUES (2, 2, 1);`
@@ -203,9 +203,9 @@ initializeDatabase().then(() => {
 
 app.get("/api/table", (req, res) => {
   const verify = {
-    "parametros_producao": "SELECT p.*, m.NOME AS MEDIDA, u.UNIDADE AS UNIDADE, f.NOME AS FUNCAO FROM parametros p LEFT JOIN parametros_medidas pm ON p.ID = pm.ID_PARAMETROS LEFT JOIN medidas m ON pm.ID_MEDIDAS = m.ID LEFT JOIN parametros_unidades pu ON p.ID = pu.ID_PARAMETROS LEFT JOIN  unidades u ON pu.ID_UNIDADES = u.ID LEFT JOIN parametros_funcoes pf ON p.ID = pf.ID_PARAMETROS LEFT JOIN funcoes f ON pf.ID_FUNCOES = f.ID;",
-    "parametros_armazenamento": "SELECT * FROM parametros WHERE FUNCAO='ARMAZENAMENTO'",
-    "medidas": "SELECT * FROM medidas",
+    "parametros_producao": "SELECT p.*, m.NOME AS GRANDEZA, u.UNIDADE AS UNIDADE, f.NOME AS FUNCAO FROM parametros p LEFT JOIN parametros_grandeza pm ON p.ID = pm.ID_PARAMETROS LEFT JOIN grandeza m ON pm.ID_grandeza = m.ID LEFT JOIN parametros_unidades pu ON p.ID = pu.ID_PARAMETROS LEFT JOIN  unidades u ON pu.ID_UNIDADES = u.ID LEFT JOIN parametros_funcoes pf ON p.ID = pf.ID_PARAMETROS LEFT JOIN funcoes f ON pf.ID_FUNCOES = f.ID;",
+    "parametros_armazenamento": "SELECT p.*, m.NOME AS GRANDEZA, u.UNIDADE AS UNIDADE, f.NOME AS FUNCAO FROM parametros p LEFT JOIN parametros_grandeza pm ON p.ID = pm.ID_PARAMETROS LEFT JOIN grandeza m ON pm.ID_grandeza = m.ID LEFT JOIN parametros_unidades pu ON p.ID = pu.ID_PARAMETROS LEFT JOIN  unidades u ON pu.ID_UNIDADES = u.ID LEFT JOIN parametros_funcoes pf ON p.ID = pf.ID_PARAMETROS LEFT JOIN funcoes f ON pf.ID_FUNCOES = f.ID;",
+    "grandeza": "SELECT * FROM grandeza",
     "users": "SELECT * FROM users",
     "unidades": "SELECT * FROM unidades",
     "funcoes": "SELECT * FROM funcoes",
@@ -236,7 +236,7 @@ app.get("/api/table", (req, res) => {
 app.get("/api/select", (req, res) => {
   const verify = {
     "STATUS": "SELECT DESCRICAO FROM status",
-    "MEDIDA":"SELECT NOME FROM medidas",
+    "GRANDEZA":"SELECT NOME FROM grandeza",
     "FUNCAO" : "SELECT NOME FROM funcoes",
   };
 
@@ -273,9 +273,9 @@ app.get("/api/selectunidade", (req, res) => {
   const sql = `
     SELECT u.UNIDADE 
     FROM unidades u 
-    LEFT JOIN medidas_unidades MU ON MU.ID_UNIDADE = u.ID 
-    LEFT JOIN medidas m ON m.ID = MU.ID_TIPO 
-    WHERE m.NOME = ?;
+    LEFT JOIN grandeza_unidades MU ON MU.ID_UNIDADE = u.ID 
+    LEFT JOIN grandeza g ON g.ID = MU.ID_GRANDEZA 
+    WHERE g.NOME = ?;
   `;
 
   console.log(`Executando SQL: ${sql} com valor: ${value}`); // Debugging
@@ -326,8 +326,8 @@ function ajustarAutoIncrement(callback) {
 app.delete("/api/delete", (req, res) => {
   const verify = {
     "parametros_producao": "DELETE p FROM parametros p JOIN parametros_funcoes pf ON p.ID = pf.ID_PARAMETROS JOIN funcoes f ON pf.ID_FUNCOES = f.ID WHERE f.NOME = 'PRODUCAO' AND p.ID = ?;",
-    "parametros_armazenamento": "DELETE FROM parametros WHERE FUNCAO = 'ARMAZENAMENTO' AND ID = ?",
-    "tipos_parametros": "DELETE FROM tipos_parametros WHERE ID = ?",
+    "parametros_armazenamento": "DELETE p FROM parametros p JOIN parametros_funcoes pf ON p.ID = pf.ID_PARAMETROS JOIN funcoes f ON pf.ID_FUNCOES = f.ID WHERE f.NOME = 'ARMAZENAMENTO' AND p.ID = ?;",
+    "grandeza": "DELETE FROM grandeza WHERE ID = ?",
     "users": "DELETE FROM users WHERE ID = ?",
     "unidades": "DELETE FROM unidades WHERE ID = ?",
     "funcoes": "DELETE FROM funcoes WHERE ID = ?",
@@ -369,10 +369,11 @@ app.delete("/api/delete", (req, res) => {
 
 
 app.post("/api/insert", (req, res) => {
-  const { PARAMETRO, MEDIDA, UNIDADE, FUNCAO, VALOR, VL_MAX, VL_MIN, STATUS } = req.body;
+  const { PARAMETRO, GRANDEZA, UNIDADE, FUNCAO, VALOR, VL_MAX, VL_MIN, STATUS } = req.body;
 
-  if (!PARAMETRO || !MEDIDA || !UNIDADE) {
-    return res.status(400).json({ error: "Parâmetros insuficientes. Necessário: PARAMETRO, MEDIDA, UNIDADE" });
+
+  if (!PARAMETRO || !GRANDEZA || !UNIDADE) {
+    return res.status(400).json({ error: "Parâmetros insuficientes. Necessário: PARAMETRO, GRANDEZA, UNIDADE" });
   }
 
   // Inserir o novo parâmetro na tabela `parametros`
@@ -391,8 +392,8 @@ app.post("/api/insert", (req, res) => {
     // Queries de associação em uma lista
     const insertQueries = [
       {
-        sql: `INSERT INTO parametros_medidas (ID_PARAMETROS, ID_MEDIDAS) VALUES (?, (SELECT ID FROM medidas WHERE NOME = ?))`,
-        values: [idParametro, MEDIDA]
+        sql: `INSERT INTO parametros_grandeza (ID_PARAMETROS, ID_grandeza) VALUES (?, (SELECT ID FROM grandeza WHERE NOME = ?))`,
+        values: [idParametro, GRANDEZA]
       },
       {
         sql: `INSERT INTO parametros_unidades (ID_PARAMETROS, ID_UNIDADES) VALUES (?, (SELECT ID FROM unidades WHERE UNIDADE = ?))`,
@@ -424,9 +425,9 @@ app.put("/api/update", (req, res) => {
       `UPDATE parametros 
        SET PARAMETRO=?, VALOR=?, VL_MIN=?, VL_MAX=?, STATUS=? 
        WHERE ID = ?;`,
-      `UPDATE parametros_medidas pm 
-       JOIN medidas m ON m.NOME = ? 
-       SET pm.ID_MEDIDAS = m.ID 
+      `UPDATE parametros_grandeza pm 
+       JOIN grandeza m ON m.NOME = ? 
+       SET pm.ID_grandeza = m.ID 
        WHERE pm.ID_PARAMETROS = ?;`,
       `UPDATE parametros_unidades pu 
        JOIN unidades u ON u.UNIDADE = ? 
@@ -452,7 +453,7 @@ app.put("/api/update", (req, res) => {
 
   const queryParams = [
     [values.PARAMETRO, values.VALOR, values.VL_MIN, values.VL_MAX, values.STATUS, id],
-    [values.MEDIDA, id],
+    [values.GRANDEZA, id],
     [values.UNIDADE, id],
     [values.FUNCAO, id]
   ];
