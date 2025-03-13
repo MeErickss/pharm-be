@@ -106,6 +106,13 @@ async function createTables() {
       PASSWORD VARCHAR(255) NOT NULL,
       NIVEL INT NOT NULL,
       STATUS VARCHAR(90) NOT NULL,
+      FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO) ON DELETE CASCADE,
+      FOREIGN KEY (NIVEL) REFERENCES niveis(ID) ON DELETE CASCADE
+    )`,
+    `CREATE TABLE IF NOT EXISTS niveis(
+      ID INT AUTO_INCREMENT PRIMARY KEY,
+      DESCRICAO VARCHAR(255) NOT NULL UNIQUE,
+      STATUS VARCHAR(90) NOT NULL,
       FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO) ON DELETE CASCADE
     )`
   ];
@@ -164,7 +171,11 @@ async function insertInitialData() {
     `INSERT IGNORE INTO parametros_grandeza VALUES (2, 2, 1);`,
 
     `INSERT IGNORE INTO parametros_funcoes VALUES (1, 1, 1);`,
-    `INSERT IGNORE INTO parametros_funcoes VALUES (2, 2, 1);`
+    `INSERT IGNORE INTO parametros_funcoes VALUES (2, 2, 1);`,
+
+    `INSERT IGNORE INTO niveis VALUES (1,'ADMIN', 'ATIVO');`,
+    `INSERT IGNORE INTO niveis VALUES (2,'MANUTENCAO', 'ATIVO');`,
+    `INSERT IGNORE INTO niveis VALUES (3,'OPERADOR', 'ATIVO');`
   ];
 
   for (const query of insert) {
@@ -209,6 +220,7 @@ app.get("/api/table", (req, res) => {
     "users": "SELECT * FROM users",
     "unidades": "SELECT * FROM unidades",
     "funcoes": "SELECT * FROM funcoes",
+    "niveis": "SELECT * FROM niveis",
     "status": "SELECT * FROM status"
   };
 
@@ -238,6 +250,7 @@ app.get("/api/select", (req, res) => {
     "STATUS": "SELECT DESCRICAO FROM status",
     "GRANDEZA":"SELECT NOME FROM grandeza",
     "FUNCAO" : "SELECT NOME FROM funcoes",
+    "NIVEL" : "SELECT DESCRICAO FROM niveis",
   };
 
   const { table } = req.query; // Obtém os parâmetros da URL
@@ -292,36 +305,48 @@ app.get("/api/selectunidade", (req, res) => {
 
 
 // Função para ajustar o AUTO_INCREMENT
-function ajustarAutoIncrement(callback) {
-  const adjustAutoIncrementSQL = `
-    SELECT MAX(ID) AS max_id FROM parametros;
-  `;
+function ajustarAutoIncrement(tabela, callback) {
+  const verify = {
+    "parametros_producao": "SELECT MAX(ID) AS max_id FROM parametros_producao;",
+    "parametros_armazenamento": "SELECT MAX(ID) AS max_id FROM parametros_armazenamento;",
+    "grandeza": "SELECT MAX(ID) AS max_id FROM grandezas;",
+    "users": "SELECT MAX(ID) AS max_id FROM users;",
+    "unidades": "SELECT MAX(ID) AS max_id FROM unidades;",
+    "funcoes": "SELECT MAX(ID) AS max_id FROM funcoes;",
+    "niveis": "SELECT MAX(ID) AS max_id FROM niveis;",
+    "status": "SELECT MAX(ID) AS max_id FROM status;"
+  };
 
-  db.query(adjustAutoIncrementSQL, (err, rows) => {
+  if (!verify[tabela]) {
+    console.error("Tabela inválida:", tabela);
+    return callback(new Error("Tabela inválida"));
+  }
+
+  const querySQL = verify[tabela];
+
+  db.query(querySQL, (err, rows) => {
     if (err) {
-      console.error("Erro ao obter o maior ID:", err);
+      console.error(`Erro ao obter o maior ID da tabela ${tabela}:`, err);
       return callback(err);
     }
 
-    const maxId = rows[0].max_id || 0;  // Se não houver registros, assume 0
+    const maxId = rows[0]?.max_id || 0; // Se não houver registros, assume 0
     const nextAutoIncrement = maxId + 1;
 
-    // Alterar o AUTO_INCREMENT com o próximo valor
-    const setAutoIncrementSQL = `
-      ALTER TABLE parametros AUTO_INCREMENT = ?
-    `;
+    const setAutoIncrementSQL = `ALTER TABLE ${tabela} AUTO_INCREMENT = ?`;
 
     db.query(setAutoIncrementSQL, [nextAutoIncrement], (err) => {
       if (err) {
-        console.error("Erro ao ajustar o AUTO_INCREMENT:", err);
+        console.error(`Erro ao ajustar o AUTO_INCREMENT da tabela ${tabela}:`, err);
         return callback(err);
       }
 
-      console.log("AUTO_INCREMENT ajustado com sucesso");
+      console.log(`AUTO_INCREMENT ajustado com sucesso para a tabela ${tabela}`);
       callback(null);
     });
   });
 }
+
 
 app.delete("/api/delete", (req, res) => {
   const verify = {
@@ -356,7 +381,7 @@ app.delete("/api/delete", (req, res) => {
     }
 
     // Chama a função para ajustar o AUTO_INCREMENT após a deleção
-    ajustarAutoIncrement((err) => {
+    ajustarAutoIncrement(table,(err) => {
       if (err) {
         return res.status(500).send("Erro ao ajustar o AUTO_INCREMENT");
       }
