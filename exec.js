@@ -394,6 +394,15 @@ app.delete("/api/delete", (req, res) => {
 
 
 app.post("/api/insert", (req, res) => {
+  const verify = {
+    "parametros_producao": "DELETE p FROM parametros p JOIN parametros_funcoes pf ON p.ID = pf.ID_PARAMETROS JOIN funcoes f ON pf.ID_FUNCOES = f.ID WHERE f.NOME = 'PRODUCAO' AND p.ID = ?;",
+    "parametros_armazenamento": "DELETE p FROM parametros p JOIN parametros_funcoes pf ON p.ID = pf.ID_PARAMETROS JOIN funcoes f ON pf.ID_FUNCOES = f.ID WHERE f.NOME = 'ARMAZENAMENTO' AND p.ID = ?;",
+    "grandeza": "INSERT IGNORE FROM grandeza WHERE ID = ?",
+    "users": "DELETE FROM users WHERE ID = ?",
+    "unidades": "DELETE FROM unidades WHERE ID = ?",
+    "funcoes": "DELETE FROM funcoes WHERE ID = ?",
+    "status": "DELETE FROM status WHERE ID = ?",
+  };
   const { PARAMETRO, GRANDEZA, UNIDADE, FUNCAO, VALOR, VL_MAX, VL_MIN, STATUS } = req.body;
 
 
