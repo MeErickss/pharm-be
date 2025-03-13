@@ -160,18 +160,29 @@ async function insertInitialData() {
     `INSERT IGNORE INTO parametros (ID, PARAMETRO, VALOR, VL_MIN, VL_MAX, STATUS)
     VALUES (2, 'TEMPO PARA DRENAGEM DO TANQUE DE ADIÇÃO [TQ-200]', 30, 15, 45, 'ATIVO');`,
 
+    `INSERT IGNORE INTO parametros (ID, PARAMETRO, VALOR, VL_MIN, VL_MAX, STATUS)
+    VALUES (3, 'TEMPO PARA DRENAGEM DO TANQUE TQ-300', 40, 5, 200, 'ATIVO');`,
+    `INSERT IGNORE INTO parametros (ID, PARAMETRO, VALOR, VL_MIN, VL_MAX, STATUS)
+    VALUES (4, 'TEMPO PARA DRENAGEM DO TANQUE TQ-310', 10, 5, 100, 'ATIVO');`,
+
     `INSERT IGNORE INTO grandeza_unidades VALUES (1, 1, 1);`,
     `INSERT IGNORE INTO grandeza_unidades VALUES (2, 2, 1);`,
     `INSERT IGNORE INTO grandeza_unidades VALUES (3, 3, 2);`,
 
     `INSERT IGNORE INTO parametros_unidades VALUES (1, 1, 1);`,
     `INSERT IGNORE INTO parametros_unidades VALUES (2, 2, 2);`,
+    `INSERT IGNORE INTO parametros_unidades VALUES (3, 3, 1);`,
+    `INSERT IGNORE INTO parametros_unidades VALUES (4, 4, 2);`,
 
     `INSERT IGNORE INTO parametros_grandeza VALUES (1, 1, 1);`,
     `INSERT IGNORE INTO parametros_grandeza VALUES (2, 2, 1);`,
+    `INSERT IGNORE INTO parametros_grandeza VALUES (3, 3, 1);`,
+    `INSERT IGNORE INTO parametros_grandeza VALUES (4, 4, 1);`,
 
     `INSERT IGNORE INTO parametros_funcoes VALUES (1, 1, 1);`,
     `INSERT IGNORE INTO parametros_funcoes VALUES (2, 2, 1);`,
+    `INSERT IGNORE INTO parametros_funcoes VALUES (3, 3, 2);`,
+    `INSERT IGNORE INTO parametros_funcoes VALUES (4, 4, 2);`,
 
     `INSERT IGNORE INTO niveis VALUES (1,'ADMIN', 'ATIVO');`,
     `INSERT IGNORE INTO niveis VALUES (2,'MANUTENCAO', 'ATIVO');`,
@@ -214,8 +225,8 @@ initializeDatabase().then(() => {
 
 app.get("/api/table", (req, res) => {
   const verify = {
-    "parametros_producao": "SELECT p.*, m.NOME AS GRANDEZA, u.UNIDADE AS UNIDADE, f.NOME AS FUNCAO FROM parametros p LEFT JOIN parametros_grandeza pm ON p.ID = pm.ID_PARAMETROS LEFT JOIN grandeza m ON pm.ID_grandeza = m.ID LEFT JOIN parametros_unidades pu ON p.ID = pu.ID_PARAMETROS LEFT JOIN  unidades u ON pu.ID_UNIDADES = u.ID LEFT JOIN parametros_funcoes pf ON p.ID = pf.ID_PARAMETROS LEFT JOIN funcoes f ON pf.ID_FUNCOES = f.ID;",
-    "parametros_armazenamento": "SELECT p.*, m.NOME AS GRANDEZA, u.UNIDADE AS UNIDADE, f.NOME AS FUNCAO FROM parametros p LEFT JOIN parametros_grandeza pm ON p.ID = pm.ID_PARAMETROS LEFT JOIN grandeza m ON pm.ID_grandeza = m.ID LEFT JOIN parametros_unidades pu ON p.ID = pu.ID_PARAMETROS LEFT JOIN  unidades u ON pu.ID_UNIDADES = u.ID LEFT JOIN parametros_funcoes pf ON p.ID = pf.ID_PARAMETROS LEFT JOIN funcoes f ON pf.ID_FUNCOES = f.ID;",
+    "parametros_producao": "SELECT p.*, m.NOME AS GRANDEZA, u.UNIDADE AS UNIDADE, f.NOME AS FUNCAO FROM parametros p LEFT JOIN parametros_grandeza pm ON p.ID = pm.ID_PARAMETROS LEFT JOIN grandeza m ON pm.ID_grandeza = m.ID LEFT JOIN parametros_unidades pu ON p.ID = pu.ID_PARAMETROS LEFT JOIN  unidades u ON pu.ID_UNIDADES = u.ID LEFT JOIN parametros_funcoes pf ON p.ID = pf.ID_PARAMETROS LEFT JOIN funcoes f ON pf.ID_FUNCOES = f.ID WHERE f.NOME = 'PRODUCAO';",
+    "parametros_armazenamento": "SELECT p.*, m.NOME AS GRANDEZA, u.UNIDADE AS UNIDADE, f.NOME AS FUNCAO FROM parametros p LEFT JOIN parametros_grandeza pm ON p.ID = pm.ID_PARAMETROS LEFT JOIN grandeza m ON pm.ID_grandeza = m.ID LEFT JOIN parametros_unidades pu ON p.ID = pu.ID_PARAMETROS LEFT JOIN  unidades u ON pu.ID_UNIDADES = u.ID LEFT JOIN parametros_funcoes pf ON p.ID = pf.ID_PARAMETROS LEFT JOIN funcoes f ON pf.ID_FUNCOES = f.ID WHERE f.NOME = 'ARMAZENAMENTO';",
     "grandeza": "SELECT * FROM grandeza",
     "users": "SELECT * FROM users",
     "unidades": "SELECT * FROM unidades",
@@ -306,10 +317,12 @@ app.get("/api/selectunidade", (req, res) => {
 
 // Função para ajustar o AUTO_INCREMENT
 function ajustarAutoIncrement(tabela, callback) {
+  if (tabela == "parametros_producao" || tabela == "parametros_armazenamento"){
+    tabela = "parametros"
+  }
   const verify = {
-    "parametros_producao": "SELECT MAX(ID) AS max_id FROM parametros_producao;",
-    "parametros_armazenamento": "SELECT MAX(ID) AS max_id FROM parametros_armazenamento;",
-    "grandeza": "SELECT MAX(ID) AS max_id FROM grandezas;",
+    "parametros": "SELECT MAX(ID) AS max_id FROM parametros;",
+    "grandeza": "SELECT MAX(ID) AS max_id FROM grandeza;",
     "users": "SELECT MAX(ID) AS max_id FROM users;",
     "unidades": "SELECT MAX(ID) AS max_id FROM unidades;",
     "funcoes": "SELECT MAX(ID) AS max_id FROM funcoes;",
@@ -334,7 +347,6 @@ function ajustarAutoIncrement(tabela, callback) {
     const nextAutoIncrement = maxId + 1;
 
     const setAutoIncrementSQL = `ALTER TABLE ${tabela} AUTO_INCREMENT = ?`;
-
     db.query(setAutoIncrementSQL, [nextAutoIncrement], (err) => {
       if (err) {
         console.error(`Erro ao ajustar o AUTO_INCREMENT da tabela ${tabela}:`, err);
@@ -395,60 +407,61 @@ app.delete("/api/delete", (req, res) => {
 
 app.post("/api/insert", (req, res) => {
   const verify = {
-    "parametros_producao": "DELETE p FROM parametros p JOIN parametros_funcoes pf ON p.ID = pf.ID_PARAMETROS JOIN funcoes f ON pf.ID_FUNCOES = f.ID WHERE f.NOME = 'PRODUCAO' AND p.ID = ?;",
-    "parametros_armazenamento": "DELETE p FROM parametros p JOIN parametros_funcoes pf ON p.ID = pf.ID_PARAMETROS JOIN funcoes f ON pf.ID_FUNCOES = f.ID WHERE f.NOME = 'ARMAZENAMENTO' AND p.ID = ?;",
-    "grandeza": "INSERT IGNORE FROM grandeza WHERE ID = ?",
-    "users": "DELETE FROM users WHERE ID = ?",
-    "unidades": "DELETE FROM unidades WHERE ID = ?",
-    "funcoes": "DELETE FROM funcoes WHERE ID = ?",
-    "status": "DELETE FROM status WHERE ID = ?",
+    "parametros": "INSERT INTO parametros (PARAMETRO, VALOR, VL_MAX, VL_MIN, STATUS) VALUES (?, ?, ?, ?, ?)",
+    "grandeza": "INSERT INTO grandeza (NOME, STATUS) VALUES (?, ?)",
+    "users": "INSERT INTO users (LOGIN, PASSWORD, NIVEL, STATUS) VALUES (?, ?, ?, ?)",
+    "unidades": "INSERT INTO unidades (UNIDADE, ABREVIACAO, STATUS) VALUES (?, ?, ?)",
+    "funcoes": "INSERT INTO funcoes (NOME, STATUS) VALUES (?, ?)",
+    "status": "INSERT INTO status (DESCRICAO) VALUES (?)"
   };
-  const { PARAMETRO, GRANDEZA, UNIDADE, FUNCAO, VALOR, VL_MAX, VL_MIN, STATUS } = req.body;
 
+  const { table, ...values } = req.body;
 
-  if (!PARAMETRO || !GRANDEZA || !UNIDADE) {
-    return res.status(400).json({ error: "Parâmetros insuficientes. Necessário: PARAMETRO, GRANDEZA, UNIDADE" });
+  if (!verify[table]) {
+    return res.status(400).json({ error: "Tabela inválida ou não suportada" });
   }
 
-  // Inserir o novo parâmetro na tabela `parametros`
-  const sqlInsertParametro = `
-    INSERT INTO parametros (PARAMETRO, VALOR, VL_MAX, VL_MIN, STATUS) VALUES (?, ?, ?, ?, ?)
-  `;
-
-  db.query(sqlInsertParametro, [PARAMETRO, VALOR, VL_MAX, VL_MIN, STATUS], (err, results) => {
+  db.query(verify[table], Object.values(values), (err, results) => {
     if (err) {
-      console.error("Erro ao inserir parâmetro:", err);
-      return res.status(500).json({ error: "Erro ao inserir parâmetro" });
+      console.error(`Erro ao inserir em ${table}:`, err);
+      return res.status(500).json({ error: `Erro ao inserir em ${table}` });
     }
 
-    const idParametro = results.insertId; // ID do parâmetro inserido
+    // Se a tabela for "parametros", criar as associações
+    if (table === "parametros") {
+      const idParametro = results.insertId;
+      const { GRANDEZA, UNIDADE, FUNCAO } = values;
 
-    // Queries de associação em uma lista
-    const insertQueries = [
-      {
-        sql: `INSERT INTO parametros_grandeza (ID_PARAMETROS, ID_grandeza) VALUES (?, (SELECT ID FROM grandeza WHERE NOME = ?))`,
-        values: [idParametro, GRANDEZA]
-      },
-      {
-        sql: `INSERT INTO parametros_unidades (ID_PARAMETROS, ID_UNIDADES) VALUES (?, (SELECT ID FROM unidades WHERE UNIDADE = ?))`,
-        values: [idParametro, UNIDADE]
-      },
-      {
-        sql: `INSERT INTO parametros_funcoes (ID_PARAMETROS, ID_FUNCOES) VALUES (?, (SELECT ID FROM funcoes WHERE NOME = ?))`,
-        values: [idParametro, FUNCAO]
-      }
-    ];
-
-    // Executar cada query da lista
-    insertQueries.forEach(({ sql, values }) => {
-      db.query(sql, values, (err) => {
-        if (err) {
-          console.error("Erro ao associar:", err);
+      const insertQueries = [
+        {
+          sql: `INSERT INTO parametros_grandeza (ID_PARAMETROS, ID_grandeza) VALUES (?, (SELECT ID FROM grandeza WHERE NOME = ?))`,
+          values: [idParametro, GRANDEZA]
+        },
+        {
+          sql: `INSERT INTO parametros_unidades (ID_PARAMETROS, ID_UNIDADES) VALUES (?, (SELECT ID FROM unidades WHERE UNIDADE = ?))`,
+          values: [idParametro, UNIDADE]
+        },
+        {
+          sql: `INSERT INTO parametros_funcoes (ID_PARAMETROS, ID_FUNCOES) VALUES (?, (SELECT ID FROM funcoes WHERE NOME = ?))`,
+          values: [idParametro, FUNCAO]
         }
-      });
-    });
+      ];
 
-    res.json({ message: "Parâmetro inserido com sucesso e relações criadas!" });
+      let queriesExecutadas = 0;
+      insertQueries.forEach(({ sql, values }) => {
+        db.query(sql, values, (err) => {
+          if (err) {
+            console.error("Erro ao associar:", err);
+          }
+          queriesExecutadas++;
+          if (queriesExecutadas === insertQueries.length) {
+            res.json({ message: "Parâmetro inserido e relações criadas com sucesso!" });
+          }
+        });
+      });
+    } else {
+      res.json({ message: `Registro inserido com sucesso na tabela ${table}!` });
+    }
   });
 });
 
