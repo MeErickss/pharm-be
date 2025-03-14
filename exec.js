@@ -114,7 +114,31 @@ async function createTables() {
       DESCRICAO VARCHAR(255) NOT NULL UNIQUE,
       STATUS VARCHAR(90) NOT NULL,
       FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO) ON DELETE CASCADE
-    )`
+    )`,
+    
+    `CREATE TABLE log_alarmes(
+      ID INT NOT NULL PRIMARY KEY,
+        USERS VARCHAR(90) NOT NULL,
+        DESCRICAO VARCHAR(90) NOT NULL,
+        DATAHORA TIMESTAMP NOT NULL,
+        STATUS VARCHAR(90) NOT NULL
+    );`,
+    
+    `CREATE TABLE log_producao(
+      ID INT NOT NULL PRIMARY KEY,
+        USERS VARCHAR(90) NOT NULL,
+        DESCRICAO VARCHAR(90) NOT NULL,
+        DATAHORA TIMESTAMP NOT NULL,
+        STATUS VARCHAR(90) NOT NULL
+    );`,
+    
+    `CREATE TABLE log_armazenamento(
+      ID INT NOT NULL PRIMARY KEY,
+        USERS VARCHAR(90) NOT NULL,
+        DESCRICAO VARCHAR(90) NOT NULL,
+        DATAHORA TIMESTAMP NOT NULL,
+        STATUS VARCHAR(90) NOT NULL
+    );`
   ];
 
   for (const query of tabelas) {
