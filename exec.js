@@ -116,7 +116,7 @@ async function createTables() {
       FOREIGN KEY (STATUS) REFERENCES status(DESCRICAO) ON DELETE CASCADE
     )`,
     
-    `CREATE TABLE log_alarmes(
+    `CREATE TABLE IF NOT EXISTS log_alarmes(
       ID INT NOT NULL PRIMARY KEY,
         USERS VARCHAR(90) NOT NULL,
         DESCRICAO VARCHAR(90) NOT NULL,
@@ -124,7 +124,7 @@ async function createTables() {
         STATUS VARCHAR(90) NOT NULL
     );`,
     
-    `CREATE TABLE log_producao(
+    `CREATE TABLE IF NOT EXISTS log_producao(
       ID INT NOT NULL PRIMARY KEY,
         USERS VARCHAR(90) NOT NULL,
         DESCRICAO VARCHAR(90) NOT NULL,
@@ -132,7 +132,7 @@ async function createTables() {
         STATUS VARCHAR(90) NOT NULL
     );`,
     
-    `CREATE TABLE log_armazenamento(
+    `CREATE TABLE IF NOT EXISTS log_armazenamento(
       ID INT NOT NULL PRIMARY KEY,
         USERS VARCHAR(90) NOT NULL,
         DESCRICAO VARCHAR(90) NOT NULL,
@@ -253,7 +253,7 @@ app.get("/api/table", (req, res) => {
     "parametros_armazenamento": "SELECT p.*, m.NOME AS GRANDEZA, u.UNIDADE AS UNIDADE, f.NOME AS FUNCAO FROM parametros p LEFT JOIN parametros_grandeza pm ON p.ID = pm.ID_PARAMETROS LEFT JOIN grandeza m ON pm.ID_grandeza = m.ID LEFT JOIN parametros_unidades pu ON p.ID = pu.ID_PARAMETROS LEFT JOIN  unidades u ON pu.ID_UNIDADES = u.ID LEFT JOIN parametros_funcoes pf ON p.ID = pf.ID_PARAMETROS LEFT JOIN funcoes f ON pf.ID_FUNCOES = f.ID WHERE f.NOME = 'ARMAZENAMENTO';",
     "grandeza": "SELECT * FROM grandeza",
     "users": "SELECT * FROM users",
-    "unidades": "SELECT * FROM unidades",
+    "unidades": "SELECT u.*, g.NOME AS GRANDEZA FROM unidades u JOIN grandeza_unidades gu ON gu.ID_UNIDADE = u.ID JOIN grandeza g ON g.ID = gu.ID_grandeza;",
     "funcoes": "SELECT * FROM funcoes",
     "niveis": "SELECT * FROM niveis",
     "status": "SELECT * FROM status"
@@ -431,12 +431,66 @@ app.delete("/api/delete", (req, res) => {
 
 app.post("/api/insert", (req, res) => {
   const verify = {
-    "parametros": "INSERT INTO parametros (PARAMETRO, VALOR, VL_MAX, VL_MIN, STATUS) VALUES (?, ?, ?, ?, ?)",
-    "grandeza": "INSERT INTO grandeza (NOME, STATUS) VALUES (?, ?)",
-    "users": "INSERT INTO users (LOGIN, PASSWORD, NIVEL, STATUS) VALUES (?, ?, ?, ?)",
-    "unidades": "INSERT INTO unidades (UNIDADE, ABREVIACAO, STATUS) VALUES (?, ?, ?)",
-    "funcoes": "INSERT INTO funcoes (NOME, STATUS) VALUES (?, ?)",
-    "status": "INSERT INTO status (DESCRICAO) VALUES (?)"
+    "parametros": {
+      sql: "INSERT INTO parametros (PARAMETRO, VALOR, VL_MAX, VL_MIN, STATUS) VALUES (?, ?, ?, ?, ?)",
+      postInsert: (idParametro, values, res) => {
+        const { GRANDEZA, UNIDADE, FUNCAO } = values;
+
+        const insertQueries = [
+          {
+            sql: `INSERT INTO parametros_grandeza (ID_PARAMETROS, ID_GRANDEZA) VALUES (?, (SELECT ID FROM grandeza WHERE NOME = ?))`,
+            values: [idParametro, GRANDEZA]
+          },
+          {
+            sql: `INSERT INTO parametros_unidades (ID_PARAMETROS, ID_UNIDADES) VALUES (?, (SELECT ID FROM unidades WHERE UNIDADE = ?))`,
+            values: [idParametro, UNIDADE]
+          },
+          {
+            sql: `INSERT INTO parametros_funcoes (ID_PARAMETROS, ID_FUNCOES) VALUES (?, (SELECT ID FROM funcoes WHERE NOME = ?))`,
+            values: [idParametro, FUNCAO]
+          }
+        ];
+
+        let queriesExecutadas = 0;
+        insertQueries.forEach(({ sql, values }) => {
+          db.query(sql, values, (err) => {
+            if (err) {
+              console.error("Erro ao associar:", err);
+            }
+            queriesExecutadas++;
+            if (queriesExecutadas === insertQueries.length) {
+              res.json({ message: "Parâmetro inserido e relações criadas com sucesso!" });
+            }
+          });
+        });
+      }
+    },
+    "grandeza": { sql: "INSERT INTO grandeza (NOME, STATUS) VALUES (?, ?)" },
+    "users": { sql: "INSERT INTO users (LOGIN, PASSWORD, NIVEL, STATUS) VALUES (?, ?, ?, ?)" },
+    "unidades": {
+      sql: "INSERT INTO unidades (UNIDADE, ABREVIACAO, STATUS) VALUES (?, ?, ?)",
+      postInsert: (idUnidade, values, res) => {
+        const { GRANDEZA } = values;
+
+        if (!GRANDEZA) {
+          return res.json({ message: "Unidade inserida com sucesso!" });
+        }
+
+        db.query(
+          `INSERT INTO grandeza_unidades (ID_UNIDADE, ID_GRANDEZA) VALUES (?, (SELECT ID FROM grandeza WHERE NOME = ?))`,
+          [idUnidade, GRANDEZA],
+          (err) => {
+            if (err) {
+              console.error("Erro ao associar unidade à grandeza:", err);
+              return res.status(500).json({ error: "Erro ao associar unidade à grandeza" });
+            }
+            res.json({ message: "Unidade inserida e associada à grandeza com sucesso!" });
+          }
+        );
+      }
+    },
+    "funcoes": { sql: "INSERT INTO funcoes (NOME, STATUS) VALUES (?, ?)" },
+    "status": { sql: "INSERT INTO status (DESCRICAO) VALUES (?)" }
   };
 
   const { table, ...values } = req.body;
@@ -445,106 +499,139 @@ app.post("/api/insert", (req, res) => {
     return res.status(400).json({ error: "Tabela inválida ou não suportada" });
   }
 
-  db.query(verify[table], Object.values(values), (err, results) => {
+  db.query(verify[table].sql, Object.values(values), (err, results) => {
     if (err) {
       console.error(`Erro ao inserir em ${table}:`, err);
       return res.status(500).json({ error: `Erro ao inserir em ${table}` });
     }
 
-    // Se a tabela for "parametros", criar as associações
-    if (table === "parametros") {
-      const idParametro = results.insertId;
-      const { GRANDEZA, UNIDADE, FUNCAO } = values;
-
-      const insertQueries = [
-        {
-          sql: `INSERT INTO parametros_grandeza (ID_PARAMETROS, ID_grandeza) VALUES (?, (SELECT ID FROM grandeza WHERE NOME = ?))`,
-          values: [idParametro, GRANDEZA]
-        },
-        {
-          sql: `INSERT INTO parametros_unidades (ID_PARAMETROS, ID_UNIDADES) VALUES (?, (SELECT ID FROM unidades WHERE UNIDADE = ?))`,
-          values: [idParametro, UNIDADE]
-        },
-        {
-          sql: `INSERT INTO parametros_funcoes (ID_PARAMETROS, ID_FUNCOES) VALUES (?, (SELECT ID FROM funcoes WHERE NOME = ?))`,
-          values: [idParametro, FUNCAO]
-        }
-      ];
-
-      let queriesExecutadas = 0;
-      insertQueries.forEach(({ sql, values }) => {
-        db.query(sql, values, (err) => {
-          if (err) {
-            console.error("Erro ao associar:", err);
-          }
-          queriesExecutadas++;
-          if (queriesExecutadas === insertQueries.length) {
-            res.json({ message: "Parâmetro inserido e relações criadas com sucesso!" });
-          }
-        });
-      });
-    } else {
-      res.json({ message: `Registro inserido com sucesso na tabela ${table}!` });
+    // Se houver uma função postInsert definida, executá-la
+    if (verify[table].postInsert) {
+      return verify[table].postInsert(results.insertId, values, res);
     }
+
+    res.json({ message: `Registro inserido com sucesso na tabela ${table}!` });
   });
 });
 
 
-app.put("/api/update", (req, res) => {
-  const verify = {
-    parametros: [
-      `UPDATE parametros 
-       SET PARAMETRO=?, VALOR=?, VL_MIN=?, VL_MAX=?, STATUS=? 
-       WHERE ID = ?;`,
-      `UPDATE parametros_grandeza pm 
-       JOIN grandeza m ON m.NOME = ? 
-       SET pm.ID_grandeza = m.ID 
-       WHERE pm.ID_PARAMETROS = ?;`,
-      `UPDATE parametros_unidades pu 
-       JOIN unidades u ON u.UNIDADE = ? 
-       SET pu.ID_UNIDADES = u.ID 
-       WHERE pu.ID_PARAMETROS = ?;`,
-      `UPDATE parametros_funcoes pf 
-       JOIN funcoes f ON f.NOME = ? 
-       SET pf.ID_FUNCOES = f.ID 
-       WHERE pf.ID_PARAMETROS = ?;`
-    ],
-  };
-
-  const { table, values, id } = req.body; // Pegando os dados do corpo da requisição
+app.put("/api/update", async (req, res) => {
+  const { table, values, id } = req.body;
 
   if (!table || !values || !id) {
     return res.status(400).send("Parâmetros insuficientes");
   }
 
-  const sqlQueries = verify[table];
-  if (!sqlQueries) {
+  const verify = {
+    "parametros": {
+      queries: [
+        "UPDATE parametros SET PARAMETRO=?, VALOR=?, VL_MIN=?, VL_MAX=?, STATUS=? WHERE ID = ?;",
+        "UPDATE parametros_grandeza SET ID_GRANDEZA=? WHERE ID_PARAMETROS = ?;",
+        "UPDATE parametros_unidades SET ID_UNIDADES=? WHERE ID_PARAMETROS = ?;",
+        "UPDATE parametros_funcoes SET ID_FUNCOES=? WHERE ID_PARAMETROS = ?;"
+      ],
+      params: async () => {
+        try {
+          const grandezaID = await getID("grandeza", "NOME", values.GRANDEZA);
+          const unidadeID = await getID("unidades", "UNIDADE", values.UNIDADE);
+          const funcaoID = await getID("funcoes", "NOME", values.FUNCAO);
+
+          return [
+            [values.PARAMETRO, values.VALOR, values.VL_MIN, values.VL_MAX, values.STATUS, id],
+            [grandezaID, id],
+            [unidadeID, id],
+            [funcaoID, id]
+          ];
+        } catch (error) {
+          console.error("Erro ao buscar IDs:", error);
+          throw error;
+        }
+      }
+    },
+    "grandeza": {
+      query: "UPDATE grandeza SET NOME = ?, STATUS = ? WHERE ID = ?",
+      params: () => [[values.NOME, values.STATUS, id]]
+    },
+    "users": {
+      query: "UPDATE users SET LOGIN = ?, PASSWORD = ?, NIVEL = ?, STATUS = ? WHERE ID = ?",
+      params: () => [[values.LOGIN, values.PASSWORD, values.NIVEL, values.STATUS, id]]
+    },
+    "unidades": {
+      queries: [
+        "UPDATE unidades SET UNIDADE = ?, ABREVIACAO = ?, STATUS = ? WHERE ID = ?;",
+        "UPDATE grandeza_unidades SET ID_GRANDEZA = (SELECT ID FROM grandeza WHERE NOME = ?) WHERE ID_UNIDADE = ?;"
+      ],
+      params: async () => {
+        try {
+          const grandezaID = await getID("grandeza", "NOME", values.GRANDEZA);
+
+          return [
+            [values.UNIDADE, values.ABREVIACAO, values.STATUS, id],
+            [grandezaID, id]
+          ];
+        } catch (error) {
+          console.error("Erro ao buscar ID da grandeza:", error);
+          throw error;
+        }
+      }
+    },
+    "funcoes": {
+      query: "UPDATE funcoes SET NOME = ?, STATUS = ? WHERE ID = ?",
+      params: () => [[values.NOME, values.STATUS, id]]
+    },
+    "status": {
+      query: "UPDATE status SET DESCRICAO = ? WHERE ID = ?",
+      params: () => [[values.DESCRICAO, id]]
+    }
+  };
+
+  const tableData = verify[table];
+  if (!tableData) {
     return res.status(400).send("Tabela inválida");
   }
 
-  const queryParams = [
-    [values.PARAMETRO, values.VALOR, values.VL_MIN, values.VL_MAX, values.STATUS, id],
-    [values.GRANDEZA, id],
-    [values.UNIDADE, id],
-    [values.FUNCAO, id]
-  ];
+  try {
+    const params = await tableData.params();
 
-  let errorOccurred = false;
+    if (Array.isArray(tableData.queries)) {
+      // Caso a tabela tenha múltiplas queries (como "parametros" e "unidades")
+      let completedQueries = 0;
+      tableData.queries.forEach((query, index) => {
+        db.query(query, params[index], (err) => {
+          if (err) {
+            console.error(`Erro ao executar query ${index + 1} para ${table}:`, err);
+            return res.status(500).send(`Erro ao atualizar ${table}`);
+          }
 
-  sqlQueries.forEach((query, index) => {
-    if (errorOccurred) return; // Se um erro já ocorreu, interrompe a execução
+          completedQueries++;
+          if (completedQueries === tableData.queries.length) {
+            return res.send("Registro atualizado com sucesso!");
+          }
+        });
+      });
+    } else {
+      // Caso a tabela tenha apenas uma query de update
+      db.query(tableData.query, params[0], (err) => {
+        if (err) {
+          console.error(`Erro ao executar update para ${table}:`, err);
+          return res.status(500).send(`Erro ao atualizar ${table}`);
+        }
+        return res.send("Registro atualizado com sucesso!");
+      });
+    }
+  } catch (error) {
+    return res.status(500).send("Erro ao buscar IDs das tabelas relacionadas.");
+  }
+});
 
-    db.query(query, queryParams[index], (err) => {
-      if (err) {
-        console.error(`Erro ao executar query ${index + 1}:`, err);
-        errorOccurred = true;
-        return res.status(500).send(`Erro ao atualizar ${table}`);
-      }
-
-      // Se for a última query e não houver erros, envia a resposta de sucesso
-      if (index === sqlQueries.length - 1) {
-        res.send("Registro atualizado com sucesso!");
-      }
+// Função auxiliar para buscar o ID pelo nome
+const getID = (table, column, value) => {
+  return new Promise((resolve, reject) => {
+    const query = `SELECT ID FROM ${table} WHERE ${column} = ? LIMIT 1`;
+    db.query(query, [value], (err, result) => {
+      if (err) return reject(err);
+      resolve(result.length ? result[0].ID : null);
     });
   });
-});
+};
+
