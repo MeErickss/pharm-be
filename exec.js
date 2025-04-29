@@ -162,12 +162,6 @@ async function insertInitialData() {
     `INSERT IGNORE INTO users VALUES (2, 'maintenance@gmail.com', '1111', 2, 'ATIVO');`,
     `INSERT IGNORE INTO users VALUES (3, 'operator@gmail.com', '2222', 1, 'ATIVO');`,
 
-    `INSERT IGNORE INTO grandeza VALUES (1, 'TEMPO', 'ATIVO');`,
-    `INSERT IGNORE INTO grandeza VALUES (2, 'PRESSAO', 'ATIVO');`,
-
-    `INSERT IGNORE INTO unidades VALUES (1, 'SEGUNDO', 'SEG', 'ATIVO');`,
-    `INSERT IGNORE INTO unidades VALUES (2, 'HORA', 'HR', 'ATIVO');`,
-    `INSERT IGNORE INTO unidades VALUES (3, 'PSI', 'PSI', 'ATIVO');`,
 
     `INSERT IGNORE INTO parametros (ID, PARAMETRO, VALOR, VL_MIN, VL_MAX, STATUS)
     VALUES (1, 'TEMPO PARA DRENAGEM DO TANQUE DE MISTURA [TQ-100]', 20, 10, 30, 'ATIVO');`,
@@ -178,6 +172,13 @@ async function insertInitialData() {
     VALUES (3, 'TEMPO PARA DRENAGEM DO TANQUE TQ-300', 40, 5, 200, 'ATIVO');`,
     `INSERT IGNORE INTO parametros (ID, PARAMETRO, VALOR, VL_MIN, VL_MAX, STATUS)
     VALUES (4, 'TEMPO PARA DRENAGEM DO TANQUE TQ-310', 10, 5, 100, 'ATIVO');`,
+
+    `INSERT IGNORE INTO grandeza VALUES (1, 'TEMPO', 'ATIVO');`,
+    `INSERT IGNORE INTO grandeza VALUES (2, 'PRESSAO', 'ATIVO');`,
+
+    `INSERT IGNORE INTO unidades VALUES (1, 'SEGUNDO', 'SEG', 'ATIVO');`,
+    `INSERT IGNORE INTO unidades VALUES (2, 'HORA', 'HR', 'ATIVO');`,
+    `INSERT IGNORE INTO unidades VALUES (3, 'PSI', 'PSI', 'ATIVO');`,
 
     `INSERT IGNORE INTO grandeza_unidades VALUES (1, 1, 1);`,
     `INSERT IGNORE INTO grandeza_unidades VALUES (2, 2, 1);`,
